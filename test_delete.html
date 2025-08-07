@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Delete Category</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>测试删除类别功能</h1>
+    
+    <div class="test-section">
+        <h3>测试 StorageService.KEYS 访问</h3>
+        <button onclick="testKeysAccess()">测试 KEYS 访问</button>
+        <div id="keys-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>测试删除类别功能</h3>
+        <button onclick="addTestCategory()">添加测试类别</button>
+        <button onclick="testDeleteCategory()">删除测试类别</button>
+        <button onclick="testDeleteNonExistent()">删除不存在的类别</button>
+        <div id="delete-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>当前自定义类别</h3>
+        <button onclick="showCurrentCategories()">显示当前类别</button>
+        <div id="categories-result"></div>
+    </div>
+
+    <!-- 加载应用的JS文件 -->
+    <script src="js/storage.js"></script>
+    <script src="js/notifications.js"></script>
+    
+    <script>
+        // 初始化存储
+        StorageService.initialize();
+        NotificationsModule.initialize();
+        
+        function testKeysAccess() {
+            const resultDiv = document.getElementById('keys-result');
+            try {
+                if (StorageService.KEYS) {
+                    resultDiv.innerHTML = `<div class="success">✓ StorageService.KEYS 可访问</div>
+                                          <div>CUSTOM_CATEGORIES: ${StorageService.KEYS.CUSTOM_CATEGORIES}</div>
+                                          <div>DAILY_DATA: ${StorageService.KEYS.DAILY_DATA}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">✗ StorageService.KEYS 为 undefined</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">✗ 错误: ${error.message}</div>`;
+            }
+        }
+        
+        function addTestCategory() {
+            try {
+                StorageService.addCustomCategory('测试类别');
+                document.getElementById('delete-result').innerHTML = '<div class="success">✓ 测试类别已添加</div>';
+                showCurrentCategories();
+            } catch (error) {
+                document.getElementById('delete-result').innerHTML = `<div class="error">✗ 添加失败: ${error.message}</div>`;
+            }
+        }
+        
+        function testDeleteCategory() {
+            const resultDiv = document.getElementById('delete-result');
+            try {
+                if (StorageService.deleteCustomCategory) {
+                    const result = StorageService.deleteCustomCategory('测试类别');
+                    resultDiv.innerHTML = `<div class="success">✓ 删除成功</div>
+                                          <div>剩余类别: ${result.categories.join(', ')}</div>`;
+                    showCurrentCategories();
+                } else {
+                    resultDiv.innerHTML = '<div class="error">✗ deleteCustomCategory 方法不存在</div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">✗ 删除失败: ${error.message}</div>`;
+            }
+        }
+        
+        function testDeleteNonExistent() {
+            const resultDiv = document.getElementById('delete-result');
+            try {
+                StorageService.deleteCustomCategory('不存在的类别');
+                resultDiv.innerHTML = '<div class="error">✗ 应该抛出错误但没有</div>';
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="success">✓ 正确抛出错误: ${error.message}</div>`;
+            }
+        }
+        
+        function showCurrentCategories() {
+            const resultDiv = document.getElementById('categories-result');
+            try {
+                const categories = StorageService.getCustomCategories();
+                resultDiv.innerHTML = `<div>当前自定义类别: ${categories.length > 0 ? categories.join(', ') : '无'}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">✗ 错误: ${error.message}</div>`;
+            }
+        }
+        
+        // 初始显示
+        setTimeout(() => {
+            testKeysAccess();
+            showCurrentCategories();
+        }, 100);
+    </script>
+</body>
+</html>

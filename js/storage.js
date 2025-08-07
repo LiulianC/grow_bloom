@@ -181,6 +181,56 @@ const StorageService = (() => {
         return categories;
     };
 
+    // 删除自定义类别
+    const deleteCustomCategory = (categoryName) => {
+        try {
+            const categories = getCustomCategories();
+            const index = categories.indexOf(categoryName);
+            
+            if (index === -1) {
+                throw new Error(`类别"${categoryName}"不存在`);
+            }
+            
+            // 从自定义类别列表中移除
+            categories.splice(index, 1);
+            localStorage.setItem(KEYS.CUSTOM_CATEGORIES, JSON.stringify(categories));
+            
+            // 从任务模板中移除该类别
+            const templates = getTaskTemplates();
+            delete templates[categoryName];
+            localStorage.setItem(KEYS.TASKS, JSON.stringify(templates));
+            
+            // 检查是否有任务使用了这个类别，如果有，需要处理
+            const allData = getAllData();
+            let hasTasksInCategory = false;
+            
+            allData.forEach(dayData => {
+                if (dayData.completedTasks) {
+                    dayData.completedTasks.forEach(task => {
+                        if (task.category === categoryName) {
+                            hasTasksInCategory = true;
+                        }
+                    });
+                }
+            });
+            
+            // 如果有任务使用了这个类别，给出警告但仍然删除类别
+            if (hasTasksInCategory) {
+                console.warn(`警告：类别"${categoryName}"已被删除，但历史任务记录中仍包含此类别的任务`);
+            }
+            
+            return {
+                success: true,
+                categories: categories,
+                hasTasksInCategory: hasTasksInCategory
+            };
+            
+        } catch (error) {
+            console.error('删除自定义类别失败:', error);
+            throw error;
+        }
+    };
+
     // 获取应用设置
     const getSettings = () => {
         return JSON.parse(localStorage.getItem(KEYS.SETTINGS)) || {
@@ -250,6 +300,7 @@ const StorageService = (() => {
 
     // 公开API
     return {
+        KEYS, // 添加KEYS常量到公开API
         initialize,
         getTodayString,
         getTodayData,
@@ -259,6 +310,7 @@ const StorageService = (() => {
         addTaskTemplate,
         getCustomCategories,
         addCustomCategory,
+        deleteCustomCategory, // 添加删除自定义类别方法
         getSettings,
         updateSettings,
         exportDataToCSV,
