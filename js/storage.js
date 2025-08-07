@@ -181,6 +181,61 @@ const StorageService = (() => {
         return categories;
     };
 
+    // 删除自定义类别
+    const deleteCustomCategory = (categoryName) => {
+        try {
+            // 获取当前自定义类别列表
+            const categories = getCustomCategories();
+            const categoryIndex = categories.indexOf(categoryName);
+            
+            if (categoryIndex === -1) {
+                console.warn(`类别 "${categoryName}" 不存在于自定义类别中`);
+                return false;
+            }
+            
+            // 从自定义类别列表中移除
+            categories.splice(categoryIndex, 1);
+            localStorage.setItem(KEYS.CUSTOM_CATEGORIES, JSON.stringify(categories));
+            
+            // 从任务模板中移除该类别
+            const templates = getTaskTemplates();
+            if (templates[categoryName]) {
+                delete templates[categoryName];
+                localStorage.setItem(KEYS.TASKS, JSON.stringify(templates));
+            }
+            
+            // 获取所有历史数据，检查是否有任务使用了这个类别
+            const allData = getAllData();
+            let hasTasksInCategory = false;
+            
+            allData.forEach(dayData => {
+                if (dayData.completedTasks) {
+                    dayData.completedTasks.forEach(task => {
+                        if (task.category === categoryName) {
+                            hasTasksInCategory = true;
+                        }
+                    });
+                }
+            });
+            
+            return {
+                success: true,
+                hasTasksInCategory: hasTasksInCategory,
+                message: hasTasksInCategory ? 
+                    `类别 "${categoryName}" 已删除，但历史任务记录中仍包含此类别的任务` : 
+                    `类别 "${categoryName}" 已成功删除`
+            };
+            
+        } catch (error) {
+            console.error('删除类别时发生错误:', error);
+            return {
+                success: false,
+                error: error.message,
+                message: `删除类别失败: ${error.message}`
+            };
+        }
+    };
+
     // 获取应用设置
     const getSettings = () => {
         return JSON.parse(localStorage.getItem(KEYS.SETTINGS)) || {
@@ -250,6 +305,7 @@ const StorageService = (() => {
 
     // 公开API
     return {
+        KEYS,
         initialize,
         getTodayString,
         getTodayData,
@@ -259,6 +315,7 @@ const StorageService = (() => {
         addTaskTemplate,
         getCustomCategories,
         addCustomCategory,
+        deleteCustomCategory,
         getSettings,
         updateSettings,
         exportDataToCSV,
