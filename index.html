@@ -136,7 +136,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h2>每日任务</h2>
-                        <button id="add-task-btn" class="icon-btn">
+                        <button id="add-task-btn" class="icon-btn" title="添加任务" aria-label="添加新任务">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
@@ -147,9 +147,13 @@
                             <button class="tab-btn" data-category="灵魂滋养">灵魂滋养</button>
                             <button class="tab-btn" data-category="自我提升">自我提升</button>
                             <button class="tab-btn" data-category="广结善缘">广结善缘</button>
-                            <button class="tab-btn" data-category="custom" id="custom-tab">
+                            <button class="tab-btn" data-category="custom" id="custom-tab" title="自定义类别" aria-label="查看自定义任务类别">
                                 <i class="fas fa-ellipsis-h"></i>
                             </button>
+                        </div>
+                        
+                        <div class="tab-content active" data-category="身体健康">
+                            <div class="tasks-list" id="tasks-身体健康"></div>
                         </div>
                         
                         <div class="tab-content" data-category="心理健康">

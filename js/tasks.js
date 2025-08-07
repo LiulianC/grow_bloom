@@ -90,6 +90,12 @@ const TasksModule = (() => {
         bindAddCategoryFormEvents();
     };
     
+    // 设置标签切换功能
+    const setupTabSwitching = () => {
+        console.log('设置标签切换功能...');
+        bindTabSwitchingEvents();
+    };
+    
     // 绑定标签切换事件
     const bindTabSwitchingEvents = () => {
         console.log('绑定标签切换事件...');
@@ -397,6 +403,8 @@ const TasksModule = (() => {
         const allTabBtns = document.querySelectorAll('.tab-btn');
         const allTabContents = document.querySelectorAll('.tab-content');
         
+        console.log(`找到 ${allTabBtns.length} 个标签按钮，${allTabContents.length} 个标签内容`);
+        
         // 取消激活所有标签和内容
         allTabBtns.forEach(tab => tab.classList.remove('active'));
         allTabContents.forEach(content => content.classList.remove('active'));
@@ -405,8 +413,16 @@ const TasksModule = (() => {
         const targetTabBtn = document.querySelector(`.tab-btn[data-category="${category}"]`);
         const targetTabContent = document.querySelector(`.tab-content[data-category="${category}"]`);
         
-        if (!targetTabBtn || !targetTabContent) {
-            console.error(`找不到类别为 ${category} 的标签或内容`);
+        console.log(`目标标签按钮:`, targetTabBtn);
+        console.log(`目标标签内容:`, targetTabContent);
+        
+        if (!targetTabBtn) {
+            console.error(`找不到类别为 ${category} 的标签按钮`);
+            return;
+        }
+        
+        if (!targetTabContent) {
+            console.error(`找不到类别为 ${category} 的标签内容`);
             return;
         }
         
@@ -771,6 +787,12 @@ const TasksModule = (() => {
         const sleepEndTimeSpan = document.getElementById('sleep-end-time');
         const sleepDurationSpan = document.getElementById('sleep-duration');
         
+        // 检查必要元素是否存在
+        if (!sleepStartBtn || !sleepEndBtn || !sleepTimeDiv || !sleepStartTimeSpan || !sleepEndTimeSpan) {
+            console.warn('Sleep tracking elements not found, skipping setup');
+            return;
+        }
+        
         // 加载当前睡眠状态
         const loadSleepStatus = () => {
             const todayData = StorageService.getTodayData();
@@ -939,10 +961,15 @@ const TasksModule = (() => {
         updateCategoryOptions();
         
         // 显示添加类别模态框
-        document.getElementById('add-category-btn').addEventListener('click', () => {
-            document.getElementById('add-task-modal').classList.add('hidden');
-            document.getElementById('add-category-modal').classList.remove('hidden');
-        });
+        const addCategoryBtn = document.getElementById('add-category-btn');
+        if (addCategoryBtn) {
+            addCategoryBtn.addEventListener('click', () => {
+                document.getElementById('add-task-modal').classList.add('hidden');
+                document.getElementById('add-category-modal').classList.remove('hidden');
+            });
+        } else {
+            console.warn('add-category-btn element not found');
+        }
         
         // 提交表单处理
         form.addEventListener('submit', (e) => {
