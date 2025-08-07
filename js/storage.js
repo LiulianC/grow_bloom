@@ -248,8 +248,32 @@ const StorageService = (() => {
         });
     };    
 
+    // 删除自定义类别
+    const deleteCustomCategory = (categoryName) => {
+        try {
+            const categories = getCustomCategories();
+            const updatedCategories = categories.filter(cat => cat !== categoryName);
+            
+            // 更新自定义类别列表
+            localStorage.setItem(KEYS.CUSTOM_CATEGORIES, JSON.stringify(updatedCategories));
+            
+            // 从任务模板中移除该类别
+            const templates = getTaskTemplates();
+            if (templates[categoryName]) {
+                delete templates[categoryName];
+                localStorage.setItem(KEYS.TASKS, JSON.stringify(templates));
+            }
+            
+            return updatedCategories;
+        } catch (error) {
+            console.error('删除自定义类别失败:', error);
+            throw error;
+        }
+    };
+
     // 公开API
     return {
+        KEYS,
         initialize,
         getTodayString,
         getTodayData,
@@ -259,6 +283,7 @@ const StorageService = (() => {
         addTaskTemplate,
         getCustomCategories,
         addCustomCategory,
+        deleteCustomCategory,
         getSettings,
         updateSettings,
         exportDataToCSV,
