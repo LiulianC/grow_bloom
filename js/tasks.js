@@ -70,11 +70,28 @@ const TasksModule = (() => {
                     // 创建自定义类别卡片
                     const categoryCard = document.createElement('div');
                     categoryCard.className = 'category-card';
-                    categoryCard.textContent = category;
                     categoryCard.dataset.category = category;
                     
-                    // 添加点击事件
-                    categoryCard.addEventListener('click', () => {
+                    // 创建类别名称元素
+                    const categoryName = document.createElement('span');
+                    categoryName.className = 'category-name';
+                    categoryName.textContent = category;
+                    
+                    // 创建删除按钮
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-category-btn';
+                    deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    deleteBtn.title = '删除类别';
+                    deleteBtn.setAttribute('aria-label', `删除${category}类别`);
+                    
+                    // 删除按钮点击事件
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation(); // 阻止事件冒泡
+                        confirmDeleteCategory(category);
+                    });
+                    
+                    // 类别卡片点击事件
+                    categoryName.addEventListener('click', () => {
                         // 确保存在标签和内容
                         if (!document.querySelector(`.tab-btn[data-category="${category}"]`)) {
                             addCategoryTab(category);
@@ -83,6 +100,8 @@ const TasksModule = (() => {
                         switchTab(category);
                     });
                     
+                    categoryCard.appendChild(categoryName);
+                    categoryCard.appendChild(deleteBtn);
                     customCategoriesContainer.appendChild(categoryCard);
                 });
             }
@@ -997,6 +1016,121 @@ const TasksModule = (() => {
         });
         
         console.log('类别诊断和修复完成');
+    };
+
+    // 确认删除类别
+    const confirmDeleteCategory = (categoryName) => {
+        console.log(`准备删除类别: ${categoryName}`);
+        
+        // 创建确认对话框
+        const confirmDialog = document.createElement('div');
+        confirmDialog.className = 'modal';
+        confirmDialog.innerHTML = `
+            <div class="modal-header">
+                <h3>确认删除类别</h3>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除类别"${categoryName}"吗？</p>
+                <p>此操作将同时删除该类别下的所有任务模板，但不会影响已完成的任务记录。</p>
+                <p>此操作无法撤销，请确认是否继续？</p>
+                <div class="form-actions">
+                    <button id="confirm-delete-category" class="danger-btn">确认删除</button>
+                    <button id="cancel-delete-category" class="secondary-btn">取消</button>
+                </div>
+            </div>
+        `;
+        
+        // 显示确认对话框
+        document.getElementById('modal-overlay').classList.remove('hidden');
+        document.getElementById('modal-overlay').appendChild(confirmDialog);
+        
+        // 设置确认删除按钮事件
+        const confirmDeleteBtn = confirmDialog.querySelector('#confirm-delete-category');
+        confirmDeleteBtn.addEventListener('click', () => {
+            deleteCategory(categoryName);
+            document.getElementById('modal-overlay').removeChild(confirmDialog);
+            document.getElementById('modal-overlay').classList.add('hidden');
+        });
+        
+        // 设置取消按钮事件
+        const cancelBtn = confirmDialog.querySelector('#cancel-delete-category');
+        cancelBtn.addEventListener('click', () => {
+            document.getElementById('modal-overlay').removeChild(confirmDialog);
+            document.getElementById('modal-overlay').classList.add('hidden');
+        });
+        
+        // 设置关闭按钮事件
+        const closeBtn = confirmDialog.querySelector('.close-modal');
+        closeBtn.addEventListener('click', () => {
+            document.getElementById('modal-overlay').removeChild(confirmDialog);
+            document.getElementById('modal-overlay').classList.add('hidden');
+        });
+    };
+
+    // 删除类别
+    const deleteCategory = (categoryName) => {
+        try {
+            console.log(`开始删除类别: ${categoryName}`);
+            
+            // 使用存储服务删除类别，如果 KEYS 不可用则使用备用方案
+            let updatedCategories;
+            try {
+                updatedCategories = StorageService.deleteCustomCategory(categoryName);
+            } catch (error) {
+                console.warn('StorageService.deleteCustomCategory 失败，使用备用方案:', error);
+                
+                // 备用方案：直接访问 localStorage
+                const FALLBACK_KEYS = {
+                    CUSTOM_CATEGORIES: 'bloom_custom_categories',
+                    TASKS: 'bloom_tasks'
+                };
+                
+                // 删除自定义类别
+                const currentCategories = JSON.parse(localStorage.getItem(FALLBACK_KEYS.CUSTOM_CATEGORIES) || '[]');
+                updatedCategories = currentCategories.filter(cat => cat !== categoryName);
+                localStorage.setItem(FALLBACK_KEYS.CUSTOM_CATEGORIES, JSON.stringify(updatedCategories));
+                
+                // 删除任务模板
+                const taskTemplates = JSON.parse(localStorage.getItem(FALLBACK_KEYS.TASKS) || '{}');
+                if (taskTemplates[categoryName]) {
+                    delete taskTemplates[categoryName];
+                    localStorage.setItem(FALLBACK_KEYS.TASKS, JSON.stringify(taskTemplates));
+                }
+            }
+            
+            // 移除UI中的类别标签
+            const tabBtn = document.querySelector(`.tab-btn[data-category="${categoryName}"]`);
+            if (tabBtn) {
+                tabBtn.remove();
+                console.log(`移除类别标签: ${categoryName}`);
+            }
+            
+            // 移除UI中的类别内容
+            const tabContent = document.querySelector(`.tab-content[data-category="${categoryName}"]`);
+            if (tabContent) {
+                tabContent.remove();
+                console.log(`移除类别内容: ${categoryName}`);
+            }
+            
+            // 重新加载类别显示
+            loadCategories();
+            
+            // 如果当前标签是被删除的类别，切换到默认标签
+            const currentActiveTab = document.querySelector('.tab-btn.active');
+            if (!currentActiveTab || currentActiveTab.dataset.category === categoryName) {
+                switchTab('身体健康');
+            }
+            
+            // 显示成功通知
+            NotificationsModule.showNotification('删除成功', `类别"${categoryName}"已成功删除`);
+            
+            console.log(`类别删除完成: ${categoryName}`);
+            
+        } catch (error) {
+            console.error('删除类别失败:', error);
+            NotificationsModule.showNotification('删除失败', `删除类别时发生错误: ${error.message}`);
+        }
     };
 
     // 公开API
