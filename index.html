@@ -19,6 +19,7 @@
                 <h1>成长小账本</h1>
             </div>
             <nav>
+                <!-- 调整顺序，设置按钮放在切换主题按钮左侧 -->
                 <button id="settings-btn" aria-label="设置" class="icon-btn">
                     <i class="fas fa-cog"></i>
                 </button>
@@ -150,38 +151,6 @@
                                 <i class="fas fa-ellipsis-h"></i>
                             </button>
                         </div>
-
-                        <div class="tab-content active" data-category="身体健康">
-                            <div class="wakeup-card" id="wakeup-card">
-                                <div class="wakeup-info">
-                                    <i class="fas fa-sun"></i>
-                                    <span>今日起床打卡</span>
-                                </div>
-                                <button id="wakeup-btn" class="primary-btn">打卡</button>
-                                <div class="wakeup-time" id="wakeup-time" style="display: none;">
-                                    <span>打卡时间：</span>
-                                    <span id="wakeup-time-value"></span>
-                                </div>
-                            </div>
-
-                            <div class="sleep-card" id="sleep-card">
-                                <div class="sleep-info">
-                                    <i class="fas fa-moon"></i>
-                                    <span>今日睡眠打卡</span>
-                                </div>
-                                <div class="sleep-actions">
-                                    <button id="sleep-start-btn" class="primary-btn">开始睡觉</button>
-                                    <button id="sleep-end-btn" class="secondary-btn" disabled>结束睡眠</button>
-                                </div>
-                                <div class="sleep-time" id="sleep-time" style="display: none;">
-                                    <div><span>入睡时间：</span><span id="sleep-start-time"></span></div>
-                                    <div><span>起床时间：</span><span id="sleep-end-time"></span></div>
-                                    <div><span>睡眠时长：</span><span id="sleep-duration"></span></div>
-                                </div>
-                            </div>                            
-
-                            <div class="tasks-list" id="tasks-身体健康"></div>
-                        </div>
                         
                         <div class="tab-content" data-category="心理健康">
                             <div class="tasks-list" id="tasks-心理健康"></div>
@@ -263,76 +232,6 @@
     <div id="modal-overlay" class="hidden">
         <!-- 添加任务模态框 -->
         <div id="add-task-modal" class="modal hidden">
-            
-            <!-- 在模态框区域添加设置模态框 -->
-            <div id="settings-modal" class="modal hidden">
-                <div class="modal-header">
-                    <h3>应用设置</h3>
-                    <button class="close-modal">×</button>
-                </div>
-                <div class="modal-body">
-                    <div class="settings-section">
-                        <h4>数据管理</h4>
-                        <div class="settings-info">
-                            <p>当前数据存储位置：浏览器本地存储(LocalStorage)</p>
-                            <p>数据总大小：<span id="data-size">计算中...</span></p>
-                        </div>
-                        <div class="settings-actions">
-                            <button id="export-all-data" class="secondary-btn">
-                                <i class="fas fa-download"></i> 导出所有数据
-                            </button>
-                            <button id="clear-data" class="danger-btn">
-                                <i class="fas fa-trash"></i> 清除所有数据
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-section">
-                        <h4>打卡设置</h4>
-                        <div class="settings-form">
-                            <div class="form-group">
-                                <label>早起打卡奖励时段：</label>
-                                <div class="time-range-inputs">
-                                    <input type="time" id="early-wake-start-time" value="05:00">
-                                    <span>至</span>
-                                    <input type="time" id="early-wake-end-time" value="06:00">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>早睡打卡奖励时段：</label>
-                                <div class="time-range-inputs">
-                                    <input type="time" id="early-sleep-start-time" value="22:00">
-                                    <span>至</span>
-                                    <input type="time" id="early-sleep-end-time" value="23:00">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-section">
-                        <h4>开发者选项</h4>
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="dev-mode-toggle">
-                                <span>开发者模式</span>
-                            </label>
-                            <p class="setting-desc">启用测试功能，方便验证应用流程</p>
-                        </div>
-                        <div id="dev-options" class="hidden">
-                            <button id="add-test-data" class="secondary-btn">
-                                <i class="fas fa-plus"></i> 添加测试数据
-                            </button>
-                            <button id="reset-today" class="warning-btn">
-                                <i class="fas fa-redo"></i> 重置今日数据
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button id="save-settings" class="primary-btn">保存设置</button>
-                    </div>
-                </div>
-            </div>            
             <div class="modal-header">
                 <h3>添加任务</h3>
                 <button class="close-modal">×</button>
@@ -384,6 +283,76 @@
             </div>
         </div>
 
+        <!-- 设置模态框 - 确保这个结构存在且正确 -->
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3>应用设置</h3>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h4>数据管理</h4>
+                    <div class="settings-info">
+                        <p>当前数据存储位置：浏览器本地存储(LocalStorage)</p>
+                        <p>数据总大小：<span id="data-size">计算中...</span></p>
+                    </div>
+                    <div class="settings-actions">
+                        <button id="export-all-data" class="secondary-btn">
+                            <i class="fas fa-download"></i> 导出所有数据
+                        </button>
+                        <button id="clear-data" class="danger-btn">
+                            <i class="fas fa-trash"></i> 清除所有数据
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h4>打卡设置</h4>
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label>早起打卡奖励时段：</label>
+                            <div class="time-range-inputs">
+                                <input type="time" id="early-wake-start-time" value="05:00">
+                                <span>至</span>
+                                <input type="time" id="early-wake-end-time" value="06:00">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>早睡打卡奖励时段：</label>
+                            <div class="time-range-inputs">
+                                <input type="time" id="early-sleep-start-time" value="22:00">
+                                <span>至</span>
+                                <input type="time" id="early-sleep-end-time" value="23:00">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h4>开发者选项</h4>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="dev-mode-toggle">
+                            <span>开发者模式</span>
+                        </label>
+                        <p class="setting-desc">启用测试功能，方便验证应用流程</p>
+                    </div>
+                    <div id="dev-options" class="hidden">
+                        <button id="add-test-data" class="secondary-btn">
+                            <i class="fas fa-plus"></i> 添加测试数据
+                        </button>
+                        <button id="reset-today" class="warning-btn">
+                            <i class="fas fa-redo"></i> 重置今日数据
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button id="save-settings" class="primary-btn">保存设置</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 退出确认模态框 -->
         <div id="exit-confirm-modal" class="modal hidden">
             <div class="modal-header">
@@ -407,6 +376,7 @@
     <script src="js/tasks.js"></script>
     <script src="js/statistics.js"></script>
     <script src="js/notifications.js"></script>
+    <script src="js/settings.js"></script>
     <script src="js/app.js"></script>
     <script>
         // 注册 Service Worker

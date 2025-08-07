@@ -200,26 +200,57 @@ const StorageService = (() => {
     };
 
     // 导出数据为CSV
+    // 修改导出数据为CSV的函数
     const exportDataToCSV = () => {
         const allData = getAllData();
         
-        // CSV 表头
-        let csv = "日期,起床时间,学习总时间(分钟),完成任务数,身体健康收入,心理健康收入,灵魂滋养收入,自我提升收入,广结善缘收入,总收入\n";
+        // 扩展CSV表头，添加睡眠相关字段
+        let csv = "日期,起床时间,睡眠开始时间,睡眠时长(分钟),睡眠时长(格式化),学习总时间(分钟),完成任务数,身体健康收入,心理健康收入,灵魂滋养收入,自我提升收入,广结善缘收入,总收入\n";
         
         // 添加数据行
         allData.forEach(day => {
+            // 计算学习时间
             const studyMinutes = day.studySessions.reduce((total, session) => {
                 return total + session.duration;
             }, 0);
             
+            // 计算完成任务数
             const taskCount = day.completedTasks.length;
             
-            csv += `${day.date},${day.wakeupTime || ''},${studyMinutes},${taskCount},${day.totalEarnings.bodyHealth},${day.totalEarnings.mentalHealth},${day.totalEarnings.soulNourishment},${day.totalEarnings.selfImprovement},${day.totalEarnings.socialBonds},${day.totalEarnings.total}\n`;
+            // 格式化时间字段为人类可读格式
+            const wakeupTime = day.wakeupTime ? formatDateTimeForHuman(new Date(day.wakeupTime)) : '';
+            const sleepStartTime = day.sleepStartTime ? formatDateTimeForHuman(new Date(day.sleepStartTime)) : '';
+            
+            // 格式化睡眠时长
+            let formattedSleepDuration = '';
+            if (day.sleepDuration) {
+                const hours = Math.floor(day.sleepDuration / 60);
+                const minutes = Math.round(day.sleepDuration % 60);
+                formattedSleepDuration = `${hours}小时${minutes}分钟`;
+            }
+            
+            // 构建CSV行
+            csv += `${day.date},${wakeupTime},${sleepStartTime},${day.sleepDuration || ''},${formattedSleepDuration},${studyMinutes},${taskCount},${day.totalEarnings.bodyHealth},${day.totalEarnings.mentalHealth},${day.totalEarnings.soulNourishment},${day.totalEarnings.selfImprovement},${day.totalEarnings.socialBonds},${day.totalEarnings.total}\n`;
         });
         
         // 添加 UTF-8 BOM
         const BOM = "\uFEFF";
         return BOM + csv;
+    };
+
+    // 添加辅助函数：格式化日期时间为人类可读格式
+    const formatDateTimeForHuman = (date) => {
+        if (!date || !(date instanceof Date) || isNaN(date)) return '';
+        
+        // 格式化为 YYYY-MM-DD HH:mm:ss
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     };
 
     // 修改setupDataExport函数
@@ -250,6 +281,7 @@ const StorageService = (() => {
 
     // 公开API
     return {
+        KEYS,  // 添加这一行！
         initialize,
         getTodayString,
         getTodayData,

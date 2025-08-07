@@ -2,89 +2,162 @@
  * 设置模块 - 管理应用设置和数据
  */
 const SettingsModule = (() => {
-    // 初始化设置模块
     const initialize = () => {
         // 设置按钮点击事件
-        document.getElementById('settings-btn').addEventListener('click', () => {
-            openSettingsModal();
-        });
+        const settingsBtn = document.getElementById('settings-btn');
+        if (settingsBtn) {
+            // 移除可能的旧事件监听器
+            const newSettingsBtn = settingsBtn.cloneNode(true);
+            settingsBtn.parentNode.replaceChild(newSettingsBtn, settingsBtn);
+            
+            // 重新绑定事件，添加错误处理
+            newSettingsBtn.addEventListener('click', function() {
+                try {
+                    console.log('设置按钮被点击');
+                    openSettingsModal();
+                } catch (error) {
+                    console.error('打开设置失败:', error);
+                    NotificationsModule.showNotification('设置打开失败', '请刷新页面后重试');
+                }
+            });
+        }
         
         // 保存设置按钮
-        document.getElementById('save-settings').addEventListener('click', () => {
-            saveSettings();
-        });
+        const saveSettingsBtn = document.getElementById('save-settings');
+        if (saveSettingsBtn) {
+            const newSaveBtn = saveSettingsBtn.cloneNode(true);
+            saveSettingsBtn.parentNode.replaceChild(newSaveBtn, saveSettingsBtn);
+            
+            newSaveBtn.addEventListener('click', function() {
+                try {
+                    saveSettings();
+                } catch (error) {
+                    console.error('保存设置失败:', error);
+                    NotificationsModule.showNotification('保存失败', error.message);
+                }
+            });
+        }
         
         // 导出所有数据按钮
-        document.getElementById('export-all-data').addEventListener('click', () => {
-            exportAllData();
-        });
+        const exportDataBtn = document.getElementById('export-all-data');
+        if (exportDataBtn) {
+            const newExportBtn = exportDataBtn.cloneNode(true);
+            exportDataBtn.parentNode.replaceChild(newExportBtn, exportDataBtn);
+            
+            newExportBtn.addEventListener('click', function() {
+                try {
+                    exportAllData();
+                } catch (error) {
+                    console.error('导出数据失败:', error);
+                    NotificationsModule.showNotification('导出失败', error.message);
+                }
+            });
+        }
         
         // 清除数据按钮
-        document.getElementById('clear-data').addEventListener('click', () => {
-            confirmClearData();
-        });
+        const clearDataBtn = document.getElementById('clear-data');
+        if (clearDataBtn) {
+            const newClearBtn = clearDataBtn.cloneNode(true);
+            clearDataBtn.parentNode.replaceChild(newClearBtn, clearDataBtn);
+            
+            newClearBtn.addEventListener('click', function() {
+                try {
+                    confirmClearData();
+                } catch (error) {
+                    console.error('清除数据失败:', error);
+                    NotificationsModule.showNotification('操作失败', error.message);
+                }
+            });
+        }
         
         // 开发者模式切换
-        document.getElementById('dev-mode-toggle').addEventListener('change', (e) => {
-            toggleDevMode(e.target.checked);
-        });
+        const devModeToggle = document.getElementById('dev-mode-toggle');
+        if (devModeToggle) {
+            const newToggle = devModeToggle.cloneNode(true);
+            devModeToggle.parentNode.replaceChild(newToggle, devModeToggle);
+            
+            newToggle.addEventListener('change', function(e) {
+                try {
+                    toggleDevMode(e.target.checked);
+                } catch (error) {
+                    console.error('切换开发者模式失败:', error);
+                }
+            });
+        }
         
         // 开发者选项按钮
-        document.getElementById('add-test-data').addEventListener('click', () => {
-            addTestData();
+        document.getElementById('add-test-data')?.addEventListener('click', function() {
+            try {
+                addTestData();
+            } catch (error) {
+                console.error('添加测试数据失败:', error);
+                NotificationsModule.showNotification('操作失败', error.message);
+            }
         });
         
-        document.getElementById('reset-today').addEventListener('click', () => {
-            resetTodayData();
+        document.getElementById('reset-today')?.addEventListener('click', function() {
+            try {
+                resetTodayData();
+            } catch (error) {
+                console.error('重置今日数据失败:', error);
+                NotificationsModule.showNotification('操作失败', error.message);
+            }
         });
         
         // 加载当前设置
-        loadCurrentSettings();
+        try {
+            loadCurrentSettings();
+        } catch (error) {
+            console.error('加载设置失败:', error);
+        }
+        
+        // 修复关闭模态框按钮
+        document.querySelectorAll('#settings-modal .close-modal').forEach(function(btn) {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', function() {
+                document.getElementById('modal-overlay').classList.add('hidden');
+                document.getElementById('settings-modal').classList.add('hidden');
+            });
+        });
     };
+    
+
     
     // 打开设置模态框
     const openSettingsModal = () => {
-        // 显示模态框
-        document.getElementById('modal-overlay').classList.remove('hidden');
-        document.getElementById('settings-modal').classList.remove('hidden');
-        
-        // 计算数据大小
-        calculateDataSize();
-        
-        // 加载当前设置
-        loadCurrentSettings();
-    };
-    
-    // 计算数据大小
-    const calculateDataSize = () => {
         try {
-            let totalSize = 0;
+            console.log('打开设置模态框');
             
-            // 计算localStorage中所有与应用相关的数据大小
-            for(let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key.startsWith('bloom_')) {
-                    const value = localStorage.getItem(key);
-                    totalSize += key.length + value.length;
-                }
+            // 检查模态框元素是否存在
+            const modalOverlay = document.getElementById('modal-overlay');
+            const settingsModal = document.getElementById('settings-modal');
+            
+            if (!modalOverlay || !settingsModal) {
+                throw new Error('找不到必要的模态框元素');
             }
             
-            // 转换为合适的单位
-            let sizeDisplay;
-            if (totalSize < 1024) {
-                sizeDisplay = `${totalSize} 字节`;
-            } else if (totalSize < 1024 * 1024) {
-                sizeDisplay = `${(totalSize / 1024).toFixed(2)} KB`;
-            } else {
-                sizeDisplay = `${(totalSize / (1024 * 1024)).toFixed(2)} MB`;
-            }
+            // 显示模态框
+            modalOverlay.classList.remove('hidden');
+            settingsModal.classList.remove('hidden');
             
-            document.getElementById('data-size').textContent = sizeDisplay;
+            // 隐藏其他模态框
+            document.querySelectorAll('.modal:not(#settings-modal)').forEach(function(modal) {
+                modal.classList.add('hidden');
+            });
+            
+            // 计算数据大小
+            calculateDataSize();
+            
+            // 加载当前设置
+            loadCurrentSettings();
         } catch (error) {
-            console.error('计算数据大小出错:', error);
-            document.getElementById('data-size').textContent = '计算失败';
+            console.error('打开设置模态框失败:', error);
+            throw error; // 重新抛出异常以便调用者处理
         }
     };
+    
     
     // 加载当前设置
     const loadCurrentSettings = () => {
@@ -436,8 +509,48 @@ const SettingsModule = (() => {
         }
     };
     
+    // 计算数据大小
+    const calculateDataSize = () => {
+        try {
+            let totalSize = 0;
+            
+            // 计算localStorage中所有与应用相关的数据大小
+            for(let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('bloom_')) {
+                    const value = localStorage.getItem(key);
+                    totalSize += key.length + value.length;
+                }
+            }
+            
+            // 转换为合适的单位
+            let sizeDisplay;
+            if (totalSize < 1024) {
+                sizeDisplay = `${totalSize} 字节`;
+            } else if (totalSize < 1024 * 1024) {
+                sizeDisplay = `${(totalSize / 1024).toFixed(2)} KB`;
+            } else {
+                sizeDisplay = `${(totalSize / (1024 * 1024)).toFixed(2)} MB`;
+            }
+            
+            const dataSize = document.getElementById('data-size');
+            if (dataSize) {
+                dataSize.textContent = sizeDisplay;
+            }
+        } catch (error) {
+            console.error('计算数据大小出错:', error);
+            const dataSize = document.getElementById('data-size');
+            if (dataSize) {
+                dataSize.textContent = '计算失败';
+            }
+        }
+    };
+    
     // 公开API
     return {
-        initialize
+        initialize,
+        calculateDataSize,
+        loadCurrentSettings,
+        openSettingsModal  // 添加此方法到公开API
     };
 })();
