@@ -57,7 +57,7 @@ const TasksModule = (() => {
         setupTimedCheckIn();        
         
         // 设置标签切换功能
-        setupTabSwitching();
+        bindTabSwitchingEvents();
         
         // 确保事件绑定（重要！）
         ensureEventBindings();
@@ -722,6 +722,11 @@ const TasksModule = (() => {
     const setupWakeupButton = () => {
         const wakeupBtn = document.getElementById('wakeup-btn');
         
+        if (!wakeupBtn) {
+            console.log('起床打卡按钮不存在，跳过起床打卡功能');
+            return;
+        }
+        
         wakeupBtn.addEventListener('click', () => {
             const now = new Date();
             const wakeupTime = now.toISOString();
@@ -770,6 +775,12 @@ const TasksModule = (() => {
         const sleepStartTimeSpan = document.getElementById('sleep-start-time');
         const sleepEndTimeSpan = document.getElementById('sleep-end-time');
         const sleepDurationSpan = document.getElementById('sleep-duration');
+        
+        // 如果睡眠追踪相关元素不存在，跳过此功能
+        if (!sleepStartBtn || !sleepEndBtn) {
+            console.log('睡眠追踪相关元素不存在，跳过睡眠追踪功能');
+            return;
+        }
         
         // 加载当前睡眠状态
         const loadSleepStatus = () => {
@@ -939,10 +950,15 @@ const TasksModule = (() => {
         updateCategoryOptions();
         
         // 显示添加类别模态框
-        document.getElementById('add-category-btn').addEventListener('click', () => {
-            document.getElementById('add-task-modal').classList.add('hidden');
-            document.getElementById('add-category-modal').classList.remove('hidden');
-        });
+        const addCategoryBtn = document.getElementById('add-category-btn');
+        if (addCategoryBtn) {
+            addCategoryBtn.addEventListener('click', () => {
+                document.getElementById('add-task-modal').classList.add('hidden');
+                document.getElementById('add-category-modal').classList.remove('hidden');
+            });
+        } else {
+            console.warn('添加类别按钮未找到');
+        }
         
         // 提交表单处理
         form.addEventListener('submit', (e) => {
@@ -1140,9 +1156,10 @@ const TasksModule = (() => {
         const earlyWakeSection = document.querySelector('.early-wake-section');
         const earlySleepSection = document.querySelector('.early-sleep-section');
         
-        // 如果DOM元素不存在，需要先创建
+        // 如果DOM元素不存在，跳过定时打卡功能
         if (!earlyWakeSection) {
-            createTimedCheckInUI();
+            console.log('定时打卡相关元素不存在，跳过定时打卡功能');
+            return;
         }
         
         // 加载保存的设置
