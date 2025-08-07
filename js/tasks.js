@@ -70,11 +70,29 @@ const TasksModule = (() => {
                     // 创建自定义类别卡片
                     const categoryCard = document.createElement('div');
                     categoryCard.className = 'category-card';
-                    categoryCard.textContent = category;
                     categoryCard.dataset.category = category;
                     
-                    // 添加点击事件
-                    categoryCard.addEventListener('click', () => {
+                    // 创建类别内容
+                    const categoryContent = document.createElement('div');
+                    categoryContent.className = 'category-content';
+                    categoryContent.textContent = category;
+                    
+                    // 创建删除按钮
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-category-btn';
+                    deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    deleteBtn.title = `删除类别 "${category}"`;
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation(); // 防止触发卡片点击事件
+                        deleteCategory(category);
+                    });
+                    
+                    // 组装卡片
+                    categoryCard.appendChild(categoryContent);
+                    categoryCard.appendChild(deleteBtn);
+                    
+                    // 添加点击事件（切换到该类别）
+                    categoryContent.addEventListener('click', () => {
                         // 确保存在标签和内容
                         if (!document.querySelector(`.tab-btn[data-category="${category}"]`)) {
                             addCategoryTab(category);
@@ -997,6 +1015,86 @@ const TasksModule = (() => {
         });
         
         console.log('类别诊断和修复完成');
+    };
+
+    // 删除类别功能
+    const deleteCategory = (categoryName) => {
+        console.log(`尝试删除类别: ${categoryName}`);
+        
+        try {
+            // 确认删除对话框
+            const confirmed = confirm(`确定要删除类别"${categoryName}"吗？\n\n注意：删除后该类别下的所有任务模板将被清空，但历史任务记录不会受影响。`);
+            
+            if (!confirmed) {
+                console.log('用户取消删除操作');
+                return;
+            }
+            
+            // 调用StorageService删除类别
+            const result = StorageService.deleteCustomCategory(categoryName);
+            
+            if (result.success) {
+                console.log(`类别删除成功: ${categoryName}`);
+                
+                // 移除UI中的标签
+                const tabBtn = document.querySelector(`.tab-btn[data-category="${categoryName}"]`);
+                if (tabBtn) {
+                    tabBtn.remove();
+                }
+                
+                // 移除UI中的内容区域
+                const tabContent = document.querySelector(`.tab-content[data-category="${categoryName}"]`);
+                if (tabContent) {
+                    tabContent.remove();
+                }
+                
+                // 重新加载自定义类别UI
+                loadCategories();
+                
+                // 切换到默认标签（身体健康）
+                switchTab('身体健康');
+                
+                // 更新任务表单中的类别选择
+                const categorySelect = document.getElementById('task-category');
+                if (categorySelect) {
+                    const optionToRemove = categorySelect.querySelector(`option[value="${categoryName}"]`);
+                    if (optionToRemove) {
+                        optionToRemove.remove();
+                    }
+                }
+                
+                // 显示成功通知
+                if (typeof NotificationsModule !== 'undefined') {
+                    NotificationsModule.showNotification('删除成功', result.message);
+                } else {
+                    alert(result.message);
+                }
+                
+                console.log(`类别 "${categoryName}" 删除完成`);
+                
+            } else {
+                console.error(`删除类别失败: ${result.message}`);
+                
+                // 显示错误通知
+                if (typeof NotificationsModule !== 'undefined') {
+                    NotificationsModule.showNotification('删除失败', result.message);
+                } else {
+                    alert(`删除失败: ${result.message}`);
+                }
+            }
+            
+        } catch (error) {
+            console.error('删除类别时发生错误:', error);
+            
+            const errorMessage = `删除失败: ${error.message}`;
+            
+            // 显示错误通知
+            if (typeof NotificationsModule !== 'undefined') {
+                NotificationsModule.showNotification('删除失败', errorMessage);
+            } else {
+                alert(errorMessage);
+            }
+        }
     };
 
     // 公开API

@@ -460,11 +460,41 @@ button:disabled {
     text-align: center;
     cursor: pointer;
     transition: all var(--transition-speed);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .category-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
+}
+
+.category-content {
+    flex: 1;
+    cursor: pointer;
+}
+
+.delete-category-btn {
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all var(--transition-speed);
+    opacity: 0.7;
+}
+
+.delete-category-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
 }
 
 /* 数据统计 */
