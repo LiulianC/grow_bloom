@@ -548,20 +548,12 @@ const TasksModule = (() => {
                     // 添加类别名称和删除按钮
                     categoryCard.innerHTML = `
                         <span>${category}</span>
-                        <button class="delete-category-btn" data-category="${category}" style="
-                            position: absolute;
-                            right: 8px;
-                            top: 50%;
-                            transform: translateY(-50%);
-                            background: none;
-                            border: none;
-                            color: var(--danger-color);
-                            opacity: 0.7;
-                            cursor: pointer;
-                            padding: 4px;
-                            border-radius: 50%;
-                        ">
-                            <i class="fas fa-trash"></i>
+                        <button class="delete-category-btn" 
+                                data-category="${category}" 
+                                title="删除类别 ${category}"
+                                aria-label="删除自定义类别 ${category}"
+                                style="...">
+                            <i class="fas fa-trash" aria-hidden="true"></i>
                         </button>
                     `;
                     
