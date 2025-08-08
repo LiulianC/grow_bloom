@@ -457,7 +457,7 @@ const StatisticsModule = (() => {
         
         // Check if Chart.js is available
         if (typeof Chart === 'undefined') {
-            console.warn('Chart.js is not available, statistics module will be limited');
+            console.log('Chart.js 库暂不可用，使用简化统计模式（这是正常情况）');
             setupLimitedStatistics();
             return;
         }
@@ -495,7 +495,7 @@ const StatisticsModule = (() => {
     
     // Setup limited statistics when Chart.js is not available
     const setupLimitedStatistics = () => {
-        console.log('Setting up limited statistics mode...');
+        console.log('设置简化统计模式（无图表库时的正常模式）...');
         
         // Hide chart elements and show basic statistics
         const chartContainer = document.querySelector('.chart-container');

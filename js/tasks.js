@@ -14,6 +14,21 @@ const getStorageKey = (keyName) => {
     return keys[keyName];
 };
 
+// 安全显示通知的辅助函数
+const safeShowNotification = (title, message, type = 'info') => {
+    if (typeof NotificationsModule !== 'undefined' && NotificationsModule.showNotification) {
+        NotificationsModule.showNotification(title, message);
+    } else {
+        // 回退到console日志
+        console.log(`[${type.toUpperCase()}] ${title}: ${message}`);
+        
+        // 可选：使用浏览器原生通知
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(title, { body: message });
+        }
+    }
+};
+
 
 const TasksModule = (() => {
     // 默认类别
@@ -31,6 +46,15 @@ const TasksModule = (() => {
     // 初始化任务系统
     const initialize = () => {
         console.log('初始化任务模块...');
+        
+        // 检查核心任务系统元素是否存在
+        const tasksSection = document.getElementById('tasks-section');
+        const addTaskBtn = document.getElementById('add-task-btn');
+        
+        if (!tasksSection || !addTaskBtn) {
+            console.error('核心任务系统元素缺失，跳过任务模块初始化');
+            return;
+        }
         
         // 加载任务类别和自定义类别
         loadCategories();
@@ -62,8 +86,7 @@ const TasksModule = (() => {
         // 确保事件绑定（重要！）
         ensureEventBindings();
         
-        // 添加任务按钮点击事件
-        const addTaskBtn = document.getElementById('add-task-btn');
+        // 添加任务按钮点击事件 (使用之前检查的 addTaskBtn)
         if (addTaskBtn) {
             addTaskBtn.addEventListener('click', () => {
                 // 加载任务模板
@@ -154,9 +177,7 @@ const TasksModule = (() => {
                 const taskName = taskNameInput.value.trim();
                 
                 if (!taskName) {
-                    if (typeof NotificationsModule !== 'undefined') {
-                        NotificationsModule.showNotification('添加失败', '请输入任务名称');
-                    }
+                    safeShowNotification('添加失败', '请输入任务名称', 'error');
                     return;
                 }
                 
@@ -199,17 +220,13 @@ const TasksModule = (() => {
                     bindTabSwitchingEvents();
                     
                     // 显示成功通知
-                    if (typeof NotificationsModule !== 'undefined') {
-                        NotificationsModule.showNotification('任务添加成功', `已添加任务："${taskName}"`);
-                    }
+                    safeShowNotification('任务添加成功', `已添加任务："${taskName}"`, 'success');
                     
                     console.log(`任务创建完成: "${taskName}" (${category})`);
                     
                 } catch (error) {
                     console.error('添加任务失败:', error);
-                    if (typeof NotificationsModule !== 'undefined') {
-                        NotificationsModule.showNotification('添加失败', '添加任务时出错，请重试');
-                    }
+                    safeShowNotification('添加失败', '添加任务时出错，请重试', 'error');
                 }
             });
             
@@ -738,6 +755,11 @@ const TasksModule = (() => {
     const setupWakeupButton = () => {
         const wakeupBtn = document.getElementById('wakeup-btn');
         
+        if (!wakeupBtn) {
+            console.log('起床打卡按钮未找到，可能在其他页面中管理');
+            return;
+        }
+        
         wakeupBtn.addEventListener('click', () => {
             const now = new Date();
             const wakeupTime = now.toISOString();
@@ -787,7 +809,7 @@ const TasksModule = (() => {
         
         // Check if the elements exist
         if (!sleepBtn) {
-            console.warn('Sleep check-in elements not found, skipping setup');
+            console.log('睡眠打卡功能使用主页面的打卡卡片，无需额外设置');
             return;
         }
         
@@ -1169,7 +1191,7 @@ const TasksModule = (() => {
 
     const setupTimedCheckIn = () => {
         // This function is simplified to avoid undefined function calls
-        console.log('Timed check-in setup completed - using existing check-in cards');
+        console.log('定时打卡功能已优化 - 使用现有的打卡卡片系统');
         
         // Load saved settings if they exist
         loadTimedCheckInSettings();
@@ -1185,7 +1207,7 @@ const TasksModule = (() => {
         // Check if timed check-in elements exist, if not, skip
         const earlyWakeInfo = document.getElementById('early-wake-info');
         if (!earlyWakeInfo) {
-            console.log('Timed check-in elements not found, using existing check-in cards');
+            console.log('定时打卡设置使用主页面系统，详细设置在设置页面中');
             return;
         }
         
@@ -1227,7 +1249,7 @@ const TasksModule = (() => {
         // Check if timed check-in elements exist, if not, skip
         const saveEarlyWake = document.getElementById('save-early-wake');
         if (!saveEarlyWake) {
-            console.log('Timed check-in buttons not found, skipping setup');
+            console.log('定时打卡按钮使用设置页面管理，任务页面无需重复设置');
             return;
         }
         // 早起打卡设置保存
