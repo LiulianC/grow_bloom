@@ -33,6 +33,12 @@ const StatisticsModule = (() => {
 
     // 初始化起床时间图表
     const setupWakeupChart = () => {
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js not available, skipping wakeup chart setup');
+            return;
+        }
+        
         // 检查是否已有图表元素，如果没有则创建
         let wakeupChartElem = document.getElementById('wakeup-chart');
         if (!wakeupChartElem) {
@@ -42,9 +48,10 @@ const StatisticsModule = (() => {
             document.querySelector('.chart-container').appendChild(wakeupChartElem);
         }
         
-        const wakeupChartCtx = wakeupChartElem.getContext('2d');
-        
-        wakeupChart = new Chart(wakeupChartCtx, {
+        try {
+            const wakeupChartCtx = wakeupChartElem.getContext('2d');
+            
+            wakeupChart = new Chart(wakeupChartCtx, {
             type: 'line',
             data: {
                 labels: [],
@@ -102,6 +109,9 @@ const StatisticsModule = (() => {
                 }
             }
         });
+        } catch (error) {
+            console.error('Failed to setup wakeup chart:', error);
+        }
     };
 
     /**
@@ -445,6 +455,13 @@ const StatisticsModule = (() => {
     const initialize = () => {
         console.log('初始化统计模块...');
         
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js is not available, statistics module will be limited');
+            setupLimitedStatistics();
+            return;
+        }
+        
         try {
             // 设置图表容器
             setupCharts();
@@ -472,12 +489,100 @@ const StatisticsModule = (() => {
             console.log('统计模块初始化完成');
         } catch (error) {
             console.error('统计模块初始化失败:', error);
+            setupLimitedStatistics();
         }
+    };
+    
+    // Setup limited statistics when Chart.js is not available
+    const setupLimitedStatistics = () => {
+        console.log('Setting up limited statistics mode...');
+        
+        // Hide chart elements and show basic statistics
+        const chartContainer = document.querySelector('.chart-container');
+        if (chartContainer) {
+            chartContainer.innerHTML = `
+                <div class="no-charts-message">
+                    <p>图表功能暂时不可用（Chart.js 未加载）</p>
+                    <div class="basic-stats">
+                        <h4>基本统计信息</h4>
+                        <div id="basic-stats-content">
+                            <p>今日收入: <span id="basic-today-earnings">0</span> 元</p>
+                            <p>总任务完成: <span id="basic-total-tasks">0</span> 个</p>
+                            <p>学习时间: <span id="basic-study-time">0</span> 分钟</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Update basic statistics
+        updateBasicStatistics();
+        
+        // Setup period switching for basic stats
+        setupBasicStatsPeriodSwitching();
+        
+        // Setup data export (this doesn't require Chart.js)
+        setupDataExport();
+    };
+    
+    // Update basic statistics
+    const updateBasicStatistics = () => {
+        try {
+            const todayData = StorageService.getTodayData();
+            
+            const todayEarningsElem = document.getElementById('basic-today-earnings');
+            const totalTasksElem = document.getElementById('basic-total-tasks');
+            const studyTimeElem = document.getElementById('basic-study-time');
+            
+            if (todayEarningsElem) {
+                todayEarningsElem.textContent = todayData.totalEarnings.total.toFixed(2);
+            }
+            
+            if (totalTasksElem) {
+                totalTasksElem.textContent = todayData.completedTasks.length;
+            }
+            
+            if (studyTimeElem) {
+                const totalStudyTime = todayData.studySessions.reduce((total, session) => total + session.duration, 0);
+                studyTimeElem.textContent = totalStudyTime;
+            }
+        } catch (error) {
+            console.error('Failed to update basic statistics:', error);
+        }
+    };
+    
+    // Setup period switching for basic statistics
+    const setupBasicStatsPeriodSwitching = () => {
+        document.querySelectorAll('.stat-period').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Remove active class from all buttons
+                document.querySelectorAll('.stat-period').forEach(b => b.classList.remove('active'));
+                // Add active class to clicked button
+                this.classList.add('active');
+                
+                // Update basic statistics based on period
+                const period = this.dataset.period;
+                updateBasicStatisticsForPeriod(period);
+            });
+        });
+    };
+    
+    // Update basic statistics for a specific period
+    const updateBasicStatisticsForPeriod = (period) => {
+        // For now, just update with today's data
+        // This could be enhanced to show period-specific data
+        updateBasicStatistics();
     };
     
     // 设置图表
     const setupCharts = () => {
         console.log('设置图表...');
+        
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js not available, skipping chart setup');
+            return;
+        }
         
         // 检查图表元素是否存在
         const dailyChartElem = document.getElementById('daily-chart');
@@ -797,57 +902,6 @@ const StatisticsModule = (() => {
         
         console.log('CSV导出按钮事件已绑定');
     };
-    
-    // 初始化睡眠图表
-    const sleepChartCtx = document.getElementById('sleep-chart').getContext('2d');
-    sleepChart = new Chart(sleepChartCtx, {
-        type: 'bar',
-        data: {
-            labels: [],
-            datasets: [
-                {
-                    label: '睡眠时长(小时)',
-                    data: [],
-                    backgroundColor: '#a5d8ff',
-                    borderColor: '#81c3ff',
-                    borderWidth: 1
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    grid: {
-                        display: false
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(200, 200, 200, 0.1)'
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            return value + 'h';
-                        }
-                    }
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const hours = Math.floor(context.raw);
-                            const minutes = Math.round((context.raw - hours) * 60);
-                            return `睡眠时长: ${hours}小时${minutes}分钟`;
-                        }
-                    }
-                }
-            }
-        }
-    });
     
     // 设置图表类型切换
     const setupChartTypeSwitching = () => {

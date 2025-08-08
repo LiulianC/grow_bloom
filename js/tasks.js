@@ -780,16 +780,14 @@ const TasksModule = (() => {
     };
 
     const setupSleepTracking = () => {
-        const sleepStartBtn = document.getElementById('sleep-start-btn');
-        const sleepEndBtn = document.getElementById('sleep-end-btn');
-        const sleepTimeDiv = document.getElementById('sleep-time');
-        const sleepStartTimeSpan = document.getElementById('sleep-start-time');
-        const sleepEndTimeSpan = document.getElementById('sleep-end-time');
-        const sleepDurationSpan = document.getElementById('sleep-duration');
+        // Use the existing sleep check-in elements from the HTML
+        const sleepBtn = document.getElementById('sleep-btn');
+        const sleepStatus = document.getElementById('sleep-status');
+        const sleepTimeDisplay = document.getElementById('sleep-time-display');
         
-        // 检查必要元素是否存在
-        if (!sleepStartBtn || !sleepEndBtn || !sleepTimeDiv || !sleepStartTimeSpan || !sleepEndTimeSpan) {
-            console.warn('Sleep tracking elements not found, skipping setup');
+        // Check if the elements exist
+        if (!sleepBtn) {
+            console.warn('Sleep check-in elements not found, skipping setup');
             return;
         }
         
@@ -797,74 +795,65 @@ const TasksModule = (() => {
         const loadSleepStatus = () => {
             const todayData = StorageService.getTodayData();
             
-            if (todayData.sleepStartTime && !todayData.sleepEndTime) {
-                // 睡眠已开始但未结束
-                sleepStartBtn.disabled = true;
-                sleepEndBtn.disabled = false;
-                sleepTimeDiv.style.display = 'block';
-                sleepStartTimeSpan.textContent = new Date(todayData.sleepStartTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                sleepEndTimeSpan.textContent = '进行中...';
-                sleepDurationSpan.textContent = '计时中...';
-            } else if (todayData.sleepStartTime && todayData.sleepEndTime) {
-                // 睡眠已完成
-                sleepStartBtn.disabled = true;
-                sleepEndBtn.disabled = true;
-                sleepTimeDiv.style.display = 'block';
-                sleepStartTimeSpan.textContent = new Date(todayData.sleepStartTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                sleepEndTimeSpan.textContent = new Date(todayData.sleepEndTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            // Check if sleep has been completed today
+            const hasSleepTask = todayData.completedTasks && todayData.completedTasks.some(task => 
+                task.name && task.name.includes('睡眠') || task.name === '睡觉打卡'
+            );
+            
+            if (hasSleepTask) {
+                // Sleep already recorded
+                if (sleepBtn) {
+                    sleepBtn.textContent = '已打卡';
+                    sleepBtn.disabled = true;
+                    sleepBtn.classList.remove('primary-btn');
+                    sleepBtn.classList.add('secondary-btn');
+                }
                 
-                const duration = Math.round(todayData.sleepDuration);
-                const hours = Math.floor(duration / 60);
-                const minutes = duration % 60;
-                sleepDurationSpan.textContent = `${hours}小时${minutes}分钟`;
+                if (sleepStatus) {
+                    sleepStatus.textContent = '已完成';
+                    sleepStatus.classList.add('completed');
+                }
+                
+                if (sleepTimeDisplay) {
+                    const sleepTask = todayData.completedTasks.find(task => 
+                        task.name && (task.name.includes('睡眠') || task.name === '睡觉打卡')
+                    );
+                    if (sleepTask) {
+                        const sleepTime = new Date(sleepTask.date);
+                        sleepTimeDisplay.textContent = `打卡时间：${sleepTime.toLocaleTimeString('zh-CN', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}`;
+                        sleepTimeDisplay.classList.remove('hidden');
+                    }
+                }
             }
         };
         
-        // 开始睡眠
-        sleepStartBtn.addEventListener('click', () => {
+        // 睡眠打卡
+        sleepBtn.addEventListener('click', () => {
             const now = new Date();
-            const sleepStartTime = now.toISOString();
-            
-            // 更新今日数据
             const todayData = StorageService.getTodayData();
-            todayData.sleepStartTime = sleepStartTime;
             
-            StorageService.updateTodayData(todayData);
+            // Check if already completed today
+            const hasSleepTask = todayData.completedTasks && todayData.completedTasks.some(task => 
+                task.name && (task.name.includes('睡眠') || task.name === '睡觉打卡')
+            );
             
-            // 更新UI
-            sleepStartBtn.disabled = true;
-            sleepEndBtn.disabled = false;
-            sleepTimeDiv.style.display = 'block';
-            sleepStartTimeSpan.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            sleepEndTimeSpan.textContent = '进行中...';
-            sleepDurationSpan.textContent = '计时中...';
+            if (hasSleepTask) {
+                if (typeof NotificationsModule !== 'undefined') {
+                    NotificationsModule.showNotification('重复打卡', '今天已经完成睡觉打卡了！');
+                }
+                return;
+            }
             
-            // 显示通知
-            NotificationsModule.showNotification('睡眠开始', '晚安！祝你有个美好的梦！');
-        });
-        
-        // 结束睡眠
-        sleepEndBtn.addEventListener('click', () => {
-            const now = new Date();
-            const sleepEndTime = now.toISOString();
-            
-            // 更新今日数据
-            const todayData = StorageService.getTodayData();
-            todayData.sleepEndTime = sleepEndTime;
-            
-            // 计算睡眠时长（分钟）
-            const startTime = new Date(todayData.sleepStartTime);
-            const endTime = new Date(sleepEndTime);
-            const durationMinutes = (endTime - startTime) / (1000 * 60);
-            todayData.sleepDuration = durationMinutes;
-            
-            // 添加到完成任务列表
+            // Create sleep task
             const sleepTask = {
                 id: `sleep-${Date.now()}`,
                 category: '身体健康',
-                name: `睡眠 (${Math.floor(durationMinutes/60)}小时${Math.round(durationMinutes%60)}分钟)`,
+                name: '睡觉打卡',
                 completed: true,
-                date: sleepEndTime,
+                date: now.toISOString(),
                 earnings: 2
             };
             
@@ -877,17 +866,33 @@ const TasksModule = (() => {
             StorageService.updateTodayData(todayData);
             
             // 更新UI
-            sleepEndBtn.disabled = true;
-            const hours = Math.floor(durationMinutes / 60);
-            const minutes = Math.round(durationMinutes % 60);
-            sleepEndTimeSpan.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            sleepDurationSpan.textContent = `${hours}小时${minutes}分钟`;
+            sleepBtn.textContent = '已打卡';
+            sleepBtn.disabled = true;
+            sleepBtn.classList.remove('primary-btn');
+            sleepBtn.classList.add('secondary-btn');
+            
+            if (sleepStatus) {
+                sleepStatus.textContent = '已完成';
+                sleepStatus.classList.add('completed');
+            }
+            
+            if (sleepTimeDisplay) {
+                sleepTimeDisplay.textContent = `打卡时间：${now.toLocaleTimeString('zh-CN', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}`;
+                sleepTimeDisplay.classList.remove('hidden');
+            }
             
             // 显示通知
-            NotificationsModule.showNotification('睡眠记录完成', `早安！你睡了 ${hours}小时${minutes}分钟，获得2元奖励！`);
+            if (typeof NotificationsModule !== 'undefined') {
+                NotificationsModule.showNotification('睡觉打卡成功', '晚安！获得2元奖励！');
+            }
             
             // 更新总览
-            updateDailyOverview();
+            if (typeof updateDailyOverview === 'function') {
+                updateDailyOverview();
+            }
         });
         
         // 加载初始状态
@@ -1163,19 +1168,13 @@ const TasksModule = (() => {
     };
 
     const setupTimedCheckIn = () => {
-        // 获取DOM元素
-        const earlyWakeSection = document.querySelector('.early-wake-section');
-        const earlySleepSection = document.querySelector('.early-sleep-section');
+        // This function is simplified to avoid undefined function calls
+        console.log('Timed check-in setup completed - using existing check-in cards');
         
-        // 如果DOM元素不存在，需要先创建
-        if (!earlyWakeSection) {
-            createTimedCheckInUI();
-        }
-        
-        // 加载保存的设置
+        // Load saved settings if they exist
         loadTimedCheckInSettings();
         
-        // 设置打卡按钮事件
+        // Setup timed check-in buttons if they exist
         setupTimedCheckInButtons();
     };
 
@@ -1183,6 +1182,13 @@ const TasksModule = (() => {
 
     // 加载保存的定时打卡设置
     const loadTimedCheckInSettings = () => {
+        // Check if timed check-in elements exist, if not, skip
+        const earlyWakeInfo = document.getElementById('early-wake-info');
+        if (!earlyWakeInfo) {
+            console.log('Timed check-in elements not found, using existing check-in cards');
+            return;
+        }
+        
         const todayData = StorageService.getTodayData();
         
         // 加载早起打卡设置和状态
@@ -1218,6 +1224,12 @@ const TasksModule = (() => {
 
     // 设置定时打卡按钮事件
     const setupTimedCheckInButtons = () => {
+        // Check if timed check-in elements exist, if not, skip
+        const saveEarlyWake = document.getElementById('save-early-wake');
+        if (!saveEarlyWake) {
+            console.log('Timed check-in buttons not found, skipping setup');
+            return;
+        }
         // 早起打卡设置保存
         document.getElementById('save-early-wake').addEventListener('click', () => {
             const startTime = document.getElementById('early-wake-start').value;
