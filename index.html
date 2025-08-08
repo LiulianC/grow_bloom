@@ -316,17 +316,37 @@
                         <div class="form-group">
                             <label>早起打卡奖励时段：</label>
                             <div class="time-range-inputs">
-                                <input type="time" id="early-wake-start-time" value="05:00">
+                                <label for="early-wake-start-time" class="sr-only">早起开始时间</label>
+                                <input type="time" 
+                                    id="early-wake-start-time" 
+                                    value="05:00"
+                                    title="设置早起打卡的开始时间"
+                                    aria-label="早起打卡开始时间">
                                 <span>至</span>
-                                <input type="time" id="early-wake-end-time" value="06:00">
+                                <label for="early-wake-end-time" class="sr-only">早起结束时间</label>
+                                <input type="time" 
+                                    id="early-wake-end-time" 
+                                    value="06:00"
+                                    title="设置早起打卡的结束时间"
+                                    aria-label="早起打卡结束时间">
                             </div>
                         </div>
                         <div class="form-group">
                             <label>早睡打卡奖励时段：</label>
                             <div class="time-range-inputs">
-                                <input type="time" id="early-sleep-start-time" value="22:00">
+                                <label for="early-sleep-start-time" class="sr-only">早睡开始时间</label>
+                                <input type="time" 
+                                    id="early-sleep-start-time" 
+                                    value="22:00"
+                                    title="设置早睡打卡的开始时间"
+                                    aria-label="早睡打卡开始时间">
                                 <span>至</span>
-                                <input type="time" id="early-sleep-end-time" value="23:00">
+                                <label for="early-sleep-end-time" class="sr-only">早睡结束时间</label>
+                                <input type="time" 
+                                    id="early-sleep-end-time" 
+                                    value="23:00"
+                                    title="设置早睡打卡的结束时间"
+                                    aria-label="早睡打卡结束时间">
                             </div>
                         </div>
                     </div>
