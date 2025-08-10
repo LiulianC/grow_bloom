@@ -1,10 +1,4 @@
-/**
- * 任务管理模块 - 管理任务和打卡功能
- */
-
-//安全访问函数
 const getStorageKey = (keyName) => {
-    // 安全获取存储键名的函数
     const keys = {
         DAILY_DATA: 'bloom_daily_data',
         TASKS: 'bloom_tasks',
@@ -16,10 +10,8 @@ const getStorageKey = (keyName) => {
 
 
 const TasksModule = (() => {
-    // 默认类别
     const DEFAULT_CATEGORIES = ['身体健康', '心理健康', '灵魂滋养', '自我提升', '广结善缘'];
     
-    // 类别与收入字段的映射
     const CATEGORY_EARNING_MAPPING = {
         '身体健康': 'bodyHealth',
         '心理健康': 'mentalHealth',
@@ -28,84 +20,50 @@ const TasksModule = (() => {
         '广结善缘': 'socialBonds'
     };
     
-    // 初始化任务系统
     const initialize = () => {
         console.log('初始化任务模块...');
         
-        // 加载任务类别和自定义类别
         loadCategories();
-        
-        // 诊断并修复类别问题
         diagnoseAndFixCategoryIssues();
-
-        // 加载今日任务
         loadTodayTasks();
-        
-        // 设置起床打卡功能
         setupWakeupButton();
-
-        // 设置睡眠打卡功能
         setupSleepTracking();        
-        
-        // 设置添加任务功能
         setupAddTaskForm();
-        
-        // 设置添加类别功能
         setupAddCategoryForm();
-
-        // 设置定时打卡功能
         setupTimedCheckIn();        
-        
-        // 设置标签切换功能
         setupTabSwitching();
-        
-        // 确保事件绑定（重要！）
         ensureEventBindings();
         
-        // 添加任务按钮点击事件
         const addTaskBtn = document.getElementById('add-task-btn');
         if (addTaskBtn) {
             addTaskBtn.addEventListener('click', () => {
-                // 加载任务模板
                 loadTaskTemplates();
-                
-                // 显示添加任务模态框
                 document.getElementById('modal-overlay').classList.remove('hidden');
                 document.getElementById('add-task-modal').classList.remove('hidden');
             });
         }
     };
     
-    // 添加确保事件绑定的函数
     const ensureEventBindings = () => {
         console.log('确保任务模块事件绑定...');
         
-        // 重新绑定标签切换事件
         bindTabSwitchingEvents();
-        
-        // 重新绑定添加任务表单事件
         bindAddTaskFormEvents();
-        
-        // 重新绑定添加类别表单事件
         bindAddCategoryFormEvents();
     };
     
-    // 设置标签切换功能
     const setupTabSwitching = () => {
         console.log('设置标签切换功能...');
         bindTabSwitchingEvents();
     };
     
-    // 绑定标签切换事件
     const bindTabSwitchingEvents = () => {
         console.log('绑定标签切换事件...');
         
         document.querySelectorAll('.tab-btn').forEach(tab => {
-            // 移除旧的事件监听器
             const newTab = tab.cloneNode(true);
             tab.parentNode.replaceChild(newTab, tab);
             
-            // 绑定新的事件监听器
             newTab.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -114,30 +72,24 @@ const TasksModule = (() => {
                 console.log('切换到任务类别:', category);
                 
                 if (category === 'custom') {
-                    // 显示自定义类别页面
                     switchToCustomTab();
                 } else {
-                    // 切换到指定类别
                     switchTab(category);
                 }
             });
         });
     };
     
-    // 绑定添加任务表单事件
-    // 修改 bindAddTaskFormEvents 函数，确保"添加自定义类别"按钮事件正确绑定
     const bindAddTaskFormEvents = () => {
         console.log('绑定添加任务表单事件...');
         
         const addTaskForm = document.getElementById('add-task-form');
         if (addTaskForm) {
-            // 移除旧的事件监听器
             const newForm = addTaskForm.cloneNode(true);
             addTaskForm.parentNode.replaceChild(newForm, addTaskForm);
             
-            // 绑定新的表单提交事件
             newForm.addEventListener('submit', function(e) {
-                e.preventDefault(); // 阻止默认提交行为
+                e.preventDefault();
                 e.stopPropagation();
                 
                 console.log('添加任务表单提交');
@@ -163,7 +115,6 @@ const TasksModule = (() => {
                 console.log(`创建新任务: "${taskName}" (${category})`);
                 
                 try {
-                    // 创建任务对象
                     const task = {
                         id: `task-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
                         category: category,
@@ -173,30 +124,20 @@ const TasksModule = (() => {
                         earnings: 0
                     };
                     
-                    // 添加到任务模板
                     StorageService.addTaskTemplate(category, taskName);
-                    
-                    // 确保类别存在
                     ensureCategoryExists(category);
-                    
-                    // 添加到UI
                     addTaskToUI(task, false);
                     
-                    // 关闭模态框
                     document.getElementById('modal-overlay').classList.add('hidden');
                     document.getElementById('add-task-modal').classList.add('hidden');
                     
-                    // 重置表单
                     newForm.reset();
                     
-                    // 延迟切换到对应标签，确保DOM更新完成
                     setTimeout(() => {
                         switchTab(category);
-                        // 确保事件绑定正常
                         bindTabSwitchingEvents();
                     }, 200);
                     
-                    // 显示成功通知
                     if (typeof NotificationsModule !== 'undefined') {
                         NotificationsModule.showNotification('任务添加成功', `已添加任务："${taskName}" 到 ${category} 类别`);
                     }
@@ -211,35 +152,27 @@ const TasksModule = (() => {
                 }
             });
             
-            // 绑定类别选择变化事件
             const categorySelect = newForm.querySelector('#task-category');
             if (categorySelect) {
                 categorySelect.addEventListener('change', loadTaskTemplates);
             }
             
-            // 重新绑定"添加自定义类别"按钮事件（关键修复）
             const addCategoryBtn = newForm.querySelector('#add-category-btn');
             if (addCategoryBtn) {
                 console.log('绑定添加自定义类别按钮事件');
                 
-                // 移除可能存在的旧事件监听器
                 const newAddCategoryBtn = addCategoryBtn.cloneNode(true);
                 addCategoryBtn.parentNode.replaceChild(newAddCategoryBtn, addCategoryBtn);
                 
-                // 绑定新的点击事件
                 newAddCategoryBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     
                     console.log('添加自定义类别按钮被点击');
                     
-                    // 隐藏添加任务模态框
                     document.getElementById('add-task-modal').classList.add('hidden');
-                    
-                    // 显示添加类别模态框
                     document.getElementById('add-category-modal').classList.remove('hidden');
                     
-                    // 确保添加类别表单事件正常
                     setTimeout(() => {
                         bindAddCategoryFormEvents();
                     }, 50);
@@ -248,15 +181,12 @@ const TasksModule = (() => {
         }
     };
 
-
-    // 添加专门检查"身体健康"类别结构的函数
     const ensureBodyHealthStructure = () => {
         console.log('检查身体健康类别结构...');
         
         const healthTabContent = document.querySelector('.tab-content[data-category="身体健康"]');
         
         if (healthTabContent) {
-            // 检查是否有任务列表容器
             let tasksContainer = healthTabContent.querySelector('.tasks-list');
             
             if (!tasksContainer) {
@@ -266,7 +196,6 @@ const TasksModule = (() => {
                 tasksContainer.className = 'tasks-list';
                 tasksContainer.id = 'tasks-身体健康';
                 
-                // 将任务列表添加到所有现有内容的最后
                 healthTabContent.appendChild(tasksContainer);
                 
                 console.log('身体健康任务列表容器创建完成');
@@ -276,19 +205,16 @@ const TasksModule = (() => {
         }
     };    
 
-    // 绑定添加类别表单事件
     const bindAddCategoryFormEvents = () => {
         console.log('绑定添加类别表单事件...');
         
         const addCategoryForm = document.getElementById('add-category-form');
         if (addCategoryForm) {
-            // 移除旧的事件监听器
             const newForm = addCategoryForm.cloneNode(true);
             addCategoryForm.parentNode.replaceChild(newForm, addCategoryForm);
             
-            // 绑定新的表单提交事件
             newForm.addEventListener('submit', function(e) {
-                e.preventDefault(); // 阻止默认提交行为
+                e.preventDefault();
                 e.stopPropagation();
                 
                 console.log('添加类别表单提交');
@@ -311,7 +237,6 @@ const TasksModule = (() => {
                 console.log(`添加新类别: ${categoryName}`);
                 
                 try {
-                    // 验证类别名称是否重复
                     if (DEFAULT_CATEGORIES.includes(categoryName) || 
                         StorageService.getCustomCategories().includes(categoryName)) {
                         if (typeof NotificationsModule !== 'undefined') {
@@ -320,16 +245,10 @@ const TasksModule = (() => {
                         return;
                     }
                     
-                    // 添加到自定义类别
                     StorageService.addCustomCategory(categoryName);
-                    
-                    // 更新UI
                     loadCategories();
-                    
-                    // 添加新标签
                     addCategoryTab(categoryName);
                     
-                    // 更新任务表单中的类别选择
                     const categorySelect = document.getElementById('task-category');
                     if (categorySelect) {
                         const option = document.createElement('option');
@@ -339,17 +258,13 @@ const TasksModule = (() => {
                         categorySelect.value = categoryName;
                     }
                     
-                    // 关闭类别模态框，打开任务模态框
                     document.getElementById('add-category-modal').classList.add('hidden');
                     document.getElementById('add-task-modal').classList.remove('hidden');
                     
-                    // 清空类别输入框
                     categoryNameInput.value = '';
                     
-                    // 确保事件绑定正常
                     bindTabSwitchingEvents();
                     
-                    // 显示成功通知
                     if (typeof NotificationsModule !== 'undefined') {
                         NotificationsModule.showNotification('类别添加成功', `已添加类别："${categoryName}"`);
                     }
@@ -366,48 +281,39 @@ const TasksModule = (() => {
         }
     };
     
-    // 切换到自定义标签
     const switchToCustomTab = () => {
         console.log('切换到自定义类别页面');
         
-        // 移除所有active类
         document.querySelectorAll('.tab-btn').forEach(tab => {
             tab.classList.remove('active');
         });
         
-        // 添加active类到自定义标签
         const customTab = document.querySelector('.tab-btn[data-category="custom"]');
         if (customTab) {
             customTab.classList.add('active');
         }
         
-        // 隐藏所有内容区域
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
         
-        // 显示自定义类别内容
         const customContent = document.querySelector('.tab-content[data-category="custom"]');
         if (customContent) {
             customContent.classList.add('active');
         }
     };
     
-    // 修改切换标签函数，确保事件不丢失
     const switchTab = (category) => {
         console.log(`尝试切换到标签: ${category}`);
         
-        // 获取所有标签按钮和内容
         const allTabBtns = document.querySelectorAll('.tab-btn');
         const allTabContents = document.querySelectorAll('.tab-content');
         
         console.log(`找到 ${allTabBtns.length} 个标签按钮，${allTabContents.length} 个标签内容`);
         
-        // 取消激活所有标签和内容
         allTabBtns.forEach(tab => tab.classList.remove('active'));
         allTabContents.forEach(content => content.classList.remove('active'));
         
-        // 找到对应标签按钮和内容
         const targetTabBtn = document.querySelector(`.tab-btn[data-category="${category}"]`);
         const targetTabContent = document.querySelector(`.tab-content[data-category="${category}"]`);
         
@@ -418,7 +324,6 @@ const TasksModule = (() => {
             console.error(`找不到类别为 ${category} 的标签按钮，尝试创建...`);
             ensureCategoryExists(category);
             
-            // 重新尝试获取
             const retryTabBtn = document.querySelector(`.tab-btn[data-category="${category}"]`);
             if (retryTabBtn) {
                 retryTabBtn.classList.add('active');
@@ -430,7 +335,6 @@ const TasksModule = (() => {
             console.error(`找不到类别为 ${category} 的标签内容，尝试创建...`);
             ensureCategoryExists(category);
             
-            // 重新尝试获取
             const retryTabContent = document.querySelector(`.tab-content[data-category="${category}"]`);
             if (retryTabContent) {
                 retryTabContent.classList.add('active');
@@ -438,13 +342,11 @@ const TasksModule = (() => {
             return;
         }
         
-        // 激活目标标签和内容
         targetTabBtn.classList.add('active');
         targetTabContent.classList.add('active');
         
         console.log(`标签切换成功: ${category}`);
         
-        // 验证任务容器
         const tasksContainer = document.getElementById(`tasks-${category}`);
         if (tasksContainer) {
             const taskCount = tasksContainer.children.length;
@@ -454,11 +356,9 @@ const TasksModule = (() => {
         }
     };
 
-    // 重写确认删除类别函数，确保工作正常
     const confirmDeleteCategory = (category) => {
         console.log('显示删除确认对话框:', category);
         
-        // 创建确认对话框
         const confirmDialog = document.createElement('div');
         confirmDialog.className = 'modal';
         confirmDialog.innerHTML = `
@@ -476,38 +376,31 @@ const TasksModule = (() => {
             </div>
         `;
         
-        // 显示确认对话框
         const modalOverlay = document.getElementById('modal-overlay');
         modalOverlay.classList.remove('hidden');
         modalOverlay.appendChild(confirmDialog);
         
-        // 添加关闭按钮事件
         confirmDialog.querySelector('.close-modal').addEventListener('click', () => {
             modalOverlay.removeChild(confirmDialog);
             modalOverlay.classList.add('hidden');
         });
         
-        // 添加取消按钮事件
         document.getElementById('cancel-delete-category').addEventListener('click', () => {
             modalOverlay.removeChild(confirmDialog);
             modalOverlay.classList.add('hidden');
         });
         
-        // 添加确认按钮事件（直接使用内联函数确保事件绑定）
         document.getElementById('confirm-delete-category').addEventListener('click', function() {
             console.log('确认删除类别:', category);
             
             try {
-                // 执行删除操作
                 deleteCategory(category);
                 
-                // 关闭弹窗
                 modalOverlay.removeChild(confirmDialog);
                 modalOverlay.classList.add('hidden');
                 
                 NotificationsModule.showNotification('删除成功', `类别"${category}"已成功删除`);
                 
-                // 刷新页面以确保UI更新
                 window.location.reload();
             } catch (error) {
                 console.error('删除类别失败:', error);
@@ -516,22 +409,18 @@ const TasksModule = (() => {
         });
     };
 
-    // 添加实际删除类别的函数
     const deleteCategory = (category) => {
         console.log('执行删除类别操作:', category);
         
         try {
-            // 1. 从自定义类别列表中删除
             const customCategories = JSON.parse(localStorage.getItem(getStorageKey('CUSTOM_CATEGORIES'))) || [];
             const updatedCategories = customCategories.filter(cat => cat !== category);
             localStorage.setItem(getStorageKey('CUSTOM_CATEGORIES'), JSON.stringify(updatedCategories));
             
-            // 2. 从任务模板中删除
             const taskTemplates = JSON.parse(localStorage.getItem(getStorageKey('TASKS'))) || {};
             delete taskTemplates[category];
             localStorage.setItem(getStorageKey('TASKS'), JSON.stringify(taskTemplates));
             
-            // 3. 从UI中删除对应标签和内容
             const tabBtn = document.querySelector(`.tab-btn[data-category="${category}"]`);
             const tabContent = document.querySelector(`.tab-content[data-category="${category}"]`);
             
@@ -546,13 +435,10 @@ const TasksModule = (() => {
         }
     };
 
-    // 加载所有类别（默认+自定义）
-    // 修改loadCategories函数，确保删除按钮工作正常
     const loadCategories = () => {
         const customCategories = StorageService.getCustomCategories();
         console.log('加载自定义类别:', customCategories);
         
-        // 处理自定义类别
         if (customCategories && customCategories.length > 0) {
             const customCategoriesContainer = document.getElementById('custom-categories');
             
@@ -560,13 +446,11 @@ const TasksModule = (() => {
                 customCategoriesContainer.innerHTML = '';
                 
                 customCategories.forEach(category => {
-                    // 创建自定义类别卡片，添加删除按钮
                     const categoryCard = document.createElement('div');
                     categoryCard.className = 'category-card';
                     categoryCard.style.position = 'relative';
                     categoryCard.style.paddingRight = '30px';
                     
-                    // 添加类别名称和删除按钮
                     categoryCard.innerHTML = `
                         <span>${category}</span>
                         <button class="delete-category-btn" 
@@ -578,23 +462,18 @@ const TasksModule = (() => {
                         </button>
                     `;
                     
-                    // 点击类别名称区域跳转到对应标签
                     categoryCard.addEventListener('click', (e) => {
-                        // 如果点击的是删除按钮，不执行跳转
                         if (e.target.closest('.delete-category-btn')) return;
                         
-                        // 确保存在标签和内容
                         if (!document.querySelector(`.tab-btn[data-category="${category}"]`)) {
                             addCategoryTab(category);
                         }
-                        // 切换到该标签
                         switchTab(category);
                     });
                     
-                    // 单独添加删除按钮点击事件
                     const deleteBtn = categoryCard.querySelector('.delete-category-btn');
                     deleteBtn.addEventListener('click', (e) => {
-                        e.stopPropagation(); // 阻止事件冒泡
+                        e.stopPropagation();
                         confirmDeleteCategory(category);
                     });
                     
@@ -602,7 +481,6 @@ const TasksModule = (() => {
                 });
             }
             
-            // 为每个自定义类别添加标签和内容区域
             customCategories.forEach(category => {
                 if (!document.querySelector(`.tab-btn[data-category="${category}"]`)) {
                     addCategoryTab(category);
@@ -612,7 +490,6 @@ const TasksModule = (() => {
     };
     
 
-    // 添加类别卡片样式
     const addCategoryCardStyles = () => {
         const styleEl = document.createElement('style');
         styleEl.textContent = `
@@ -643,11 +520,9 @@ const TasksModule = (() => {
         document.head.appendChild(styleEl);
     };    
 
-    // 动态添加类别标签
     const addCategoryTab = (category) => {
         console.log(`创建类别标签: ${category}`);
         
-        // 检查标签是否已存在
         if (document.querySelector(`.tab-btn[data-category="${category}"]`)) {
             console.log(`标签 ${category} 已存在`);
             return;
@@ -661,16 +536,13 @@ const TasksModule = (() => {
             return;
         }
         
-        // 1. 创建新标签按钮
         const newTabBtn = document.createElement('button');
         newTabBtn.className = 'tab-btn';
         newTabBtn.dataset.category = category;
         newTabBtn.textContent = category;
         
-        // 在自定义标签按钮前插入
         tabsContainer.insertBefore(newTabBtn, customTabBtn);
         
-        // 2. 创建对应的内容区域
         const tabContentsParent = document.querySelector('.card-body');
         
         if (!tabContentsParent) {
@@ -682,7 +554,6 @@ const TasksModule = (() => {
         newTabContent.className = 'tab-content';
         newTabContent.dataset.category = category;
         
-        // 3. 创建任务列表容器
         const tasksList = document.createElement('div');
         tasksList.className = 'tasks-list';
         tasksList.id = `tasks-${category}`;
@@ -692,26 +563,20 @@ const TasksModule = (() => {
         
         console.log(`类别标签创建成功: ${category}`);
         
-        // 4. 重新绑定所有标签事件
         bindTabSwitchingEvents();
     };
     
 
-    
-    // 加载今日任务
     const loadTodayTasks = () => {
         console.log('加载今日任务...');
         
         const todayData = StorageService.getTodayData();
         const completedTasks = todayData.completedTasks || [];
         
-        // 检查并显示今日起床时间
         if (todayData.wakeupTime) {
             console.log('今日已进行起床打卡');
-            // 相关代码在 setupWakeupButton 中处理
         }
         
-        // 清空所有任务列表
         DEFAULT_CATEGORIES.forEach(category => {
             const tasksContainer = document.getElementById(`tasks-${category}`);
             if (tasksContainer) {
@@ -719,7 +584,6 @@ const TasksModule = (() => {
             }
         });
         
-        // 清空自定义类别的任务列表
         const customCategories = StorageService.getCustomCategories();
         customCategories.forEach(category => {
             const tasksContainer = document.getElementById(`tasks-${category}`);
@@ -731,25 +595,21 @@ const TasksModule = (() => {
             }
         });
         
-        // 显示已完成的任务
         completedTasks.forEach(task => {
             console.log(`显示已完成任务: "${task.name}" (${task.category})`);
             
-            // 确保类别存在
             if (!DEFAULT_CATEGORIES.includes(task.category) && !customCategories.includes(task.category)) {
                 console.log(`任务的类别 "${task.category}" 不存在，添加为自定义类别`);
                 StorageService.addCustomCategory(task.category);
                 addCategoryTab(task.category);
             }
             
-            // 添加任务到UI
             addTaskToUI(task, true);
         });
         
         console.log(`今日任务加载完成，共 ${completedTasks.length} 个已完成任务`);
     };
     
-    // 设置起床打卡功能
     const setupWakeupButton = () => {
         const wakeupBtn = document.getElementById('wakeup-btn');
         
@@ -757,11 +617,9 @@ const TasksModule = (() => {
             const now = new Date();
             const wakeupTime = now.toISOString();
             
-            // 更新今日数据
             const todayData = StorageService.getTodayData();
             todayData.wakeupTime = wakeupTime;
             
-            // 添加到完成任务列表
             const wakeupTask = {
                 id: `wakeup-${Date.now()}`,
                 category: '身体健康',
@@ -773,50 +631,41 @@ const TasksModule = (() => {
             
             todayData.completedTasks.push(wakeupTask);
             
-            // 更新身体健康收入
             todayData.totalEarnings.bodyHealth += 2;
             todayData.totalEarnings.total += 2;
             
             StorageService.updateTodayData(todayData);
             
-            // 更新UI
             wakeupBtn.disabled = true;
             
             const wakeupTimeValue = document.getElementById('wakeup-time-value');
             wakeupTimeValue.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             document.getElementById('wakeup-time').style.display = 'block';
             
-            // 显示通知
             NotificationsModule.showNotification('起床打卡成功', '获得2元奖励！新的一天，充满希望！');
             
-            // 更新总览
             updateDailyOverview();
         });
     };
 
     const setupSleepTracking = () => {
-        // Use the existing sleep check-in elements from the HTML
         const sleepBtn = document.getElementById('sleep-btn');
         const sleepStatus = document.getElementById('sleep-status');
         const sleepTimeDisplay = document.getElementById('sleep-time-display');
         
-        // Check if the elements exist
         if (!sleepBtn) {
             console.warn('Sleep check-in elements not found, skipping setup');
             return;
         }
         
-        // 加载当前睡眠状态
         const loadSleepStatus = () => {
             const todayData = StorageService.getTodayData();
             
-            // Check if sleep has been completed today
             const hasSleepTask = todayData.completedTasks && todayData.completedTasks.some(task => 
                 task.name && task.name.includes('睡眠') || task.name === '睡觉打卡'
             );
             
             if (hasSleepTask) {
-                // Sleep already recorded
                 if (sleepBtn) {
                     sleepBtn.textContent = '已打卡';
                     sleepBtn.disabled = true;
@@ -845,12 +694,10 @@ const TasksModule = (() => {
             }
         };
         
-        // 睡眠打卡
         sleepBtn.addEventListener('click', () => {
             const now = new Date();
             const todayData = StorageService.getTodayData();
             
-            // Check if already completed today
             const hasSleepTask = todayData.completedTasks && todayData.completedTasks.some(task => 
                 task.name && (task.name.includes('睡眠') || task.name === '睡觉打卡')
             );
@@ -862,7 +709,6 @@ const TasksModule = (() => {
                 return;
             }
             
-            // Create sleep task
             const sleepTask = {
                 id: `sleep-${Date.now()}`,
                 category: '身体健康',
@@ -874,13 +720,11 @@ const TasksModule = (() => {
             
             todayData.completedTasks.push(sleepTask);
             
-            // 更新身体健康收入
             todayData.totalEarnings.bodyHealth += 2;
             todayData.totalEarnings.total += 2;
             
             StorageService.updateTodayData(todayData);
             
-            // 更新UI
             sleepBtn.textContent = '已打卡';
             sleepBtn.disabled = true;
             sleepBtn.classList.remove('primary-btn');
@@ -899,22 +743,18 @@ const TasksModule = (() => {
                 sleepTimeDisplay.classList.remove('hidden');
             }
             
-            // 显示通知
             if (typeof NotificationsModule !== 'undefined') {
                 NotificationsModule.showNotification('睡觉打卡成功', '晚安！获得2元奖励！');
             }
             
-            // 更新总览
             if (typeof updateDailyOverview === 'function') {
                 updateDailyOverview();
             }
         });
         
-        // 加载初始状态
         loadSleepStatus();
     };
 
-    // 加载任务模板
     const loadTaskTemplates = () => {
         const templatesContainer = document.getElementById('task-templates');
         templatesContainer.innerHTML = '';
@@ -934,25 +774,19 @@ const TasksModule = (() => {
         });
     };
     
-    // 设置添加任务表单
     const setupAddTaskForm = () => {
         const form = document.getElementById('add-task-form');
         const categorySelect = document.getElementById('task-category');
         
-        // 类别变化时更新模板
         categorySelect.addEventListener('change', loadTaskTemplates);
         
-        // 添加自定义类别到选择框
         const updateCategoryOptions = () => {
             console.log('更新任务类别选项');
             
-            // 保存当前选中值
             const selectedValue = categorySelect.value;
             
-            // 清空选项
             categorySelect.innerHTML = '';
             
-            // 添加默认类别
             DEFAULT_CATEGORIES.forEach(category => {
                 const option = document.createElement('option');
                 option.value = category;
@@ -960,7 +794,6 @@ const TasksModule = (() => {
                 categorySelect.appendChild(option);
             });
             
-            // 添加自定义类别
             const customCategories = StorageService.getCustomCategories();
             console.log('自定义类别:', customCategories);
             
@@ -971,16 +804,13 @@ const TasksModule = (() => {
                 categorySelect.appendChild(option);
             });
             
-            // 恢复选中值
             if (selectedValue && Array.from(categorySelect.options).some(opt => opt.value === selectedValue)) {
                 categorySelect.value = selectedValue;
             }
         };
         
-        // 初始化类别选项
         updateCategoryOptions();
         
-        // 显示添加类别模态框
         const addCategoryBtn = document.getElementById('add-category-btn');
         if (addCategoryBtn) {
             addCategoryBtn.addEventListener('click', () => {
@@ -991,7 +821,6 @@ const TasksModule = (() => {
             console.warn('add-category-btn element not found');
         }
         
-        // 提交表单处理
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             
@@ -1002,7 +831,6 @@ const TasksModule = (() => {
             
             console.log(`创建新任务: "${taskName}" (${category})`);
             
-            // 创建任务对象
             const task = {
                 id: `task-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
                 category: category,
@@ -1012,26 +840,20 @@ const TasksModule = (() => {
                 earnings: 0
             };
             
-            // 添加到任务模板
             StorageService.addTaskTemplate(category, taskName);
             
-            // 确保类别标签存在
             if (!document.querySelector(`.tab-btn[data-category="${category}"]`)) {
                 console.log(`为 ${category} 创建新标签`);
                 addCategoryTab(category);
             }
             
-            // 添加到UI
             addTaskToUI(task, false);
             
-            // 切换到对应标签
             switchTab(category);
             
-            // 关闭模态框
             document.getElementById('modal-overlay').classList.add('hidden');
             document.getElementById('add-task-modal').classList.add('hidden');
             
-            // 重置表单
             form.reset();
             
             console.log(`任务创建完成: "${taskName}" (${category})`);
@@ -1039,8 +861,6 @@ const TasksModule = (() => {
     };
 
 
-    
-    // 设置添加类别表单
     const setupAddCategoryForm = () => {
         const form = document.getElementById('add-category-form');
         
@@ -1053,23 +873,18 @@ const TasksModule = (() => {
             
             console.log(`添加新类别: ${categoryName}`);
             
-            // 验证类别名称是否重复
             if (DEFAULT_CATEGORIES.includes(categoryName) || 
                 StorageService.getCustomCategories().includes(categoryName)) {
                 NotificationsModule.showNotification('添加失败', `类别"${categoryName}"已存在`);
                 return;
             }
             
-            // 添加到自定义类别
             StorageService.addCustomCategory(categoryName);
             
-            // 更新UI
             loadCategories();
             
-            // 添加新标签
             addCategoryTab(categoryName);
             
-            // 更新任务表单中的类别选择
             const categorySelect = document.getElementById('task-category');
             const option = document.createElement('option');
             option.value = categoryName;
@@ -1077,30 +892,24 @@ const TasksModule = (() => {
             categorySelect.appendChild(option);
             categorySelect.value = categoryName;
             
-            // 切换到新标签
             switchTab(categoryName);
             
-            // 关闭类别模态框，打开任务模态框
             document.getElementById('add-category-modal').classList.add('hidden');
             document.getElementById('add-task-modal').classList.remove('hidden');
             
-            // 清空类别输入框
             document.getElementById('category-name').value = '';
             
             console.log(`类别添加成功: ${categoryName}`);
         });
     };
     
-    // 确保类别完整性检查函数
     const ensureCategoryExists = (category) => {
         console.log(`检查类别完整性: ${category}`);
         
-        // 跳过默认类别
         if (DEFAULT_CATEGORIES.includes(category)) {
             return;
         }
         
-        // 检查标签按钮
         let tabBtn = document.querySelector(`.tab-btn[data-category="${category}"]`);
         if (!tabBtn) {
             console.log(`类别 ${category} 缺少标签按钮，创建中...`);
@@ -1108,7 +917,6 @@ const TasksModule = (() => {
             tabBtn = document.querySelector(`.tab-btn[data-category="${category}"]`);
         }
         
-        // 检查标签内容
         let tabContent = document.querySelector(`.tab-content[data-category="${category}"]`);
         if (!tabContent) {
             console.log(`类别 ${category} 缺少标签内容，创建中...`);
@@ -1116,7 +924,6 @@ const TasksModule = (() => {
             tabContent = document.querySelector(`.tab-content[data-category="${category}"]`);
         }
         
-        // 检查任务列表容器
         let tasksContainer = document.getElementById(`tasks-${category}`);
         if (!tasksContainer) {
             console.log(`类别 ${category} 缺少任务容器，创建中...`);
@@ -1129,26 +936,21 @@ const TasksModule = (() => {
             }
         }
         
-        // 重新绑定标签切换事件
         bindTabSwitchingEvents();
         
         console.log(`类别 ${category} 完整性检查完成`);
     };
 
-    // 添加任务到UI
     const addTaskToUI = (task, isCompleted) => {
         console.log(`开始添加任务到UI: "${task.name}" (${task.category})`);
         
-        // 1. 确保类别完整存在
         ensureCategoryExists(task.category);
         
-        // 2. 查找任务容器，特别处理自定义类别
         let tasksContainer = document.getElementById(`tasks-${task.category}`);
         
         if (!tasksContainer) {
             console.error(`找不到类别 ${task.category} 的任务容器，强制创建...`);
             
-            // 如果是自定义类别，确保标签和容器都存在
             if (!DEFAULT_CATEGORIES.includes(task.category)) {
                 addCategoryTab(task.category);
                 tasksContainer = document.getElementById(`tasks-${task.category}`);
@@ -1160,13 +962,11 @@ const TasksModule = (() => {
             }
         }
         
-        // 3. 检查任务是否已存在（避免重复添加）
         if (document.querySelector(`.task-item[data-id="${task.id}"]`)) {
             console.log(`任务 ${task.id} 已存在，跳过添加`);
             return;
         }
         
-        // 4. 创建任务元素
         const taskElement = document.createElement('div');
         taskElement.className = `task-item ${isCompleted ? 'completed' : ''}`;
         taskElement.dataset.id = task.id;
@@ -1178,7 +978,6 @@ const TasksModule = (() => {
             </div>
         `;
         
-        // 5. 如果任务未完成，添加点击事件
         if (!isCompleted) {
             const checkBtn = taskElement.querySelector('.task-check');
             checkBtn.addEventListener('click', function() {
@@ -1186,39 +985,28 @@ const TasksModule = (() => {
             });
         }
         
-        // 6. 添加到容器
         tasksContainer.appendChild(taskElement);
         console.log(`成功添加任务 "${task.name}" 到 ${task.category} 类别`);
         
-        // 7. 自动切换到该类别标签（新任务创建时）
         if (!isCompleted) {
             setTimeout(() => {
                 switchTab(task.category);
             }, 100);
         }
         
-        // 8. 更新总览
         if (typeof updateDailyOverview === 'function') {
             updateDailyOverview();
         }
     };
 
     const setupTimedCheckIn = () => {
-        // This function is simplified to avoid undefined function calls
         console.log('Timed check-in setup completed - using existing check-in cards');
         
-        // Load saved settings if they exist
         loadTimedCheckInSettings();
-        
-        // Setup timed check-in buttons if they exist
         setupTimedCheckInButtons();
     };
 
-
-
-    // 加载保存的定时打卡设置
     const loadTimedCheckInSettings = () => {
-        // Check if timed check-in elements exist, if not, skip
         const earlyWakeInfo = document.getElementById('early-wake-info');
         if (!earlyWakeInfo) {
             console.log('Timed check-in elements not found, using existing check-in cards');
@@ -1227,7 +1015,6 @@ const TasksModule = (() => {
         
         const todayData = StorageService.getTodayData();
         
-        // 加载早起打卡设置和状态
         if (todayData.earlyWakeSettings) {
             document.getElementById('early-wake-start').value = todayData.earlyWakeSettings.startTime;
             document.getElementById('early-wake-end').value = todayData.earlyWakeSettings.endTime;
@@ -1242,7 +1029,6 @@ const TasksModule = (() => {
             }
         }
         
-        // 加载早睡打卡设置和状态
         if (todayData.earlySleepSettings) {
             document.getElementById('early-sleep-start').value = todayData.earlySleepSettings.startTime;
             document.getElementById('early-sleep-end').value = todayData.earlySleepSettings.endTime;
@@ -1258,26 +1044,22 @@ const TasksModule = (() => {
         }
     };
 
-    // 设置定时打卡按钮事件
     const setupTimedCheckInButtons = () => {
-        // Check if timed check-in elements exist, if not, skip
         const saveEarlyWake = document.getElementById('save-early-wake');
         if (!saveEarlyWake) {
             console.log('Timed check-in buttons not found, skipping setup');
             return;
         }
-        // 早起打卡设置保存
+        
         document.getElementById('save-early-wake').addEventListener('click', () => {
             const startTime = document.getElementById('early-wake-start').value;
             const endTime = document.getElementById('early-wake-end').value;
             
-            // 验证时间设置
             if (!startTime || !endTime || startTime >= endTime) {
                 NotificationsModule.showNotification('设置失败', '请设置有效的时间范围');
                 return;
             }
             
-            // 保存设置
             const todayData = StorageService.getTodayData();
             todayData.earlyWakeSettings = {
                 startTime: startTime,
@@ -1285,25 +1067,21 @@ const TasksModule = (() => {
             };
             StorageService.updateTodayData(todayData);
             
-            // 更新UI
             const earlyWakeInfo = document.getElementById('early-wake-info');
             earlyWakeInfo.innerHTML = `<p>在${startTime}-${endTime}之间打卡有效，可获得3元奖励</p>`;
             
             NotificationsModule.showNotification('设置成功', `早起打卡时间已设为${startTime}-${endTime}`);
         });
         
-        // 早睡打卡设置保存
         document.getElementById('save-early-sleep').addEventListener('click', () => {
             const startTime = document.getElementById('early-sleep-start').value;
             const endTime = document.getElementById('early-sleep-end').value;
             
-            // 验证时间设置
             if (!startTime || !endTime || startTime >= endTime) {
                 NotificationsModule.showNotification('设置失败', '请设置有效的时间范围');
                 return;
             }
             
-            // 保存设置
             const todayData = StorageService.getTodayData();
             todayData.earlySleepSettings = {
                 startTime: startTime,
@@ -1311,14 +1089,12 @@ const TasksModule = (() => {
             };
             StorageService.updateTodayData(todayData);
             
-            // 更新UI
             const earlySleepInfo = document.getElementById('early-sleep-info');
             earlySleepInfo.innerHTML = `<p>在${startTime}-${endTime}之间打卡有效，可获得3元奖励</p>`;
             
             NotificationsModule.showNotification('设置成功', `早睡打卡时间已设为${startTime}-${endTime}`);
         });
         
-        // 早起打卡
         document.getElementById('early-wake-checkin').addEventListener('click', () => {
             const todayData = StorageService.getTodayData();
             
@@ -1330,12 +1106,9 @@ const TasksModule = (() => {
             const now = new Date();
             const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             
-            // 检查是否在有效时间范围内
             if (currentTime >= todayData.earlyWakeSettings.startTime && currentTime <= todayData.earlyWakeSettings.endTime) {
-                // 打卡成功
                 todayData.earlyWakeCheckedIn = true;
                 
-                // 添加到完成任务列表
                 const earlyWakeTask = {
                     id: `early-wake-${Date.now()}`,
                     category: '身体健康',
@@ -1347,28 +1120,23 @@ const TasksModule = (() => {
                 
                 todayData.completedTasks.push(earlyWakeTask);
                 
-                // 更新身体健康收入
                 todayData.totalEarnings.bodyHealth += 3;
                 todayData.totalEarnings.total += 3;
                 
                 StorageService.updateTodayData(todayData);
                 
-                // 更新UI
                 document.getElementById('early-wake-status').textContent = '已完成';
                 document.getElementById('early-wake-status').classList.add('completed');
                 document.getElementById('early-wake-checkin').disabled = true;
                 
                 NotificationsModule.showNotification('早起打卡成功', '恭喜你成功早起！获得3元奖励');
                 
-                // 更新总览
                 updateDailyOverview();
             } else {
-                // 打卡失败
                 NotificationsModule.showNotification('打卡失败', `当前不在有效打卡时间内(${todayData.earlyWakeSettings.startTime}-${todayData.earlyWakeSettings.endTime})`);
             }
         });
         
-        // 早睡打卡
         document.getElementById('early-sleep-checkin').addEventListener('click', () => {
             const todayData = StorageService.getTodayData();
             
@@ -1380,12 +1148,9 @@ const TasksModule = (() => {
             const now = new Date();
             const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             
-            // 检查是否在有效时间范围内
             if (currentTime >= todayData.earlySleepSettings.startTime && currentTime <= todayData.earlySleepSettings.endTime) {
-                // 打卡成功
                 todayData.earlySleepCheckedIn = true;
                 
-                // 添加到完成任务列表
                 const earlySleepTask = {
                     id: `early-sleep-${Date.now()}`,
                     category: '身体健康',
@@ -1397,98 +1162,76 @@ const TasksModule = (() => {
                 
                 todayData.completedTasks.push(earlySleepTask);
                 
-                // 更新身体健康收入
                 todayData.totalEarnings.bodyHealth += 3;
                 todayData.totalEarnings.total += 3;
                 
                 StorageService.updateTodayData(todayData);
                 
-                // 更新UI
                 document.getElementById('early-sleep-status').textContent = '已完成';
                 document.getElementById('early-sleep-status').classList.add('completed');
                 document.getElementById('early-sleep-checkin').disabled = true;
                 
                 NotificationsModule.showNotification('早睡打卡成功', '恭喜你今天早睡！获得3元奖励');
                 
-                // 更新总览
                 updateDailyOverview();
             } else {
-                // 打卡失败
                 NotificationsModule.showNotification('打卡失败', `当前不在有效打卡时间内(${todayData.earlySleepSettings.startTime}-${todayData.earlySleepSettings.endTime})`);
             }
         });
     };    
-        
-    // 完成任务
-    // 修改 completeTask 函数
     const completeTask = (task, taskElement) => {
-        // 检查任务是否已经完成，避免重复计算
         if (taskElement.classList.contains('completed')) {
             return;
         }
         
-        // 更新UI
         taskElement.classList.add('completed');
         
-        // 更新任务状态
         task.completed = true;
         task.date = new Date().toISOString();
-        task.earnings = 2; // 每个任务2元
+        task.earnings = 2;
         
-        // 更新今日数据
         const todayData = StorageService.getTodayData();
         
-        // 检查是否已存在此任务ID（避免重复添加）
         const existingTaskIndex = todayData.completedTasks.findIndex(t => t.id === task.id);
         if (existingTaskIndex === -1) {
             todayData.completedTasks.push(task);
             
-            // 更新相应类别的收入
             const earningField = CATEGORY_EARNING_MAPPING[task.category] || 'selfImprovement';
             todayData.totalEarnings[earningField] += task.earnings;
             todayData.totalEarnings.total += task.earnings;
             
             StorageService.updateTodayData(todayData);
             
-            // 显示通知
             NotificationsModule.showNotification('任务完成', `完成"${task.name}"，获得2元奖励！`);
         }
         
-        // 更新总览
         updateDailyOverview();
         
-        // 禁用点击事件
         const checkBtn = taskElement.querySelector('.task-check');
         checkBtn.removeEventListener('click', () => completeTask(task, taskElement));
-        checkBtn.style.pointerEvents = 'none'; // 确保不可点击
+        checkBtn.style.pointerEvents = 'none';
     };
     
     const diagnoseAndFixCategoryIssues = () => {
         console.log('开始诊断类别问题...');
         
-        // 确保身体健康类别结构正确
         ensureBodyHealthStructure();
         
-        // 获取所有自定义类别
         const customCategories = StorageService.getCustomCategories();
         console.log(`发现 ${customCategories.length} 个自定义类别`);
         
-        // 检查每个自定义类别是否有对应的UI元素
         customCategories.forEach(category => {
-            // 检查标签按钮
             const tabBtn = document.querySelector(`.tab-btn[data-category="${category}"]`);
             if (!tabBtn) {
                 console.log(`类别 "${category}" 缺少标签按钮，正在修复...`);
                 addCategoryTab(category);
             }
             
-            // 检查内容区域
             const tabContent = document.querySelector(`.tab-content[data-category="${category}"]`);
             if (!tabContent) {
                 console.log(`类别 "${category}" 缺少内容区域，正在修复...`);
             }
             
-            // 检查任务列表容器
             const tasksList = document.getElementById(`tasks-${category}`);
             if (!tasksList) {
                 console.log(`类别 "${category}" 缺少任务列表容器，正在修复...`);
@@ -1502,7 +1245,6 @@ const TasksModule = (() => {
             }
         });
         
-        // 检查是否有任务被分配到了不存在的类别
         const todayData = StorageService.getTodayData();
         const allTasks = todayData.completedTasks;
         const missingCategories = new Set();
@@ -1514,7 +1256,6 @@ const TasksModule = (() => {
             }
         });
         
-        // 修复缺失的类别
         missingCategories.forEach(category => {
             console.log(`添加缺失的类别: "${category}"`);
             StorageService.addCustomCategory(category);

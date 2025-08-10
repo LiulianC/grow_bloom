@@ -7,19 +7,16 @@ const StatisticsModule = (() => {
     let periodChart;
     let sleepChart;
     
-    // 在初始化时添加图表标签
     const setupChartTabs = () => {
         const chartTabsContainer = document.querySelector('.chart-tabs');
         if (!chartTabsContainer) return;
-        
-        // 确保有完整的标签选项
+
         chartTabsContainer.innerHTML = `
             <button class="chart-tab active" data-chart="income">收入</button>
             <button class="chart-tab" data-chart="sleep">睡眠</button>
             <button class="chart-tab" data-chart="wakeup">起床时间</button>
         `;
-        
-        // 设置标签切换事件
+
         document.querySelectorAll('.chart-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
@@ -31,7 +28,6 @@ const StatisticsModule = (() => {
         });
     };
 
-    // 初始化起床时间图表
     const setupWakeupChart = () => {
         // Check if Chart.js is available
         if (typeof Chart === 'undefined') {
@@ -39,7 +35,7 @@ const StatisticsModule = (() => {
             return;
         }
         
-        // 检查是否已有图表元素，如果没有则创建
+
         let wakeupChartElem = document.getElementById('wakeup-chart');
         if (!wakeupChartElem) {
             wakeupChartElem = document.createElement('canvas');
@@ -85,7 +81,7 @@ const StatisticsModule = (() => {
                         }
                     },
                     y: {
-                        reverse: true, // 使较早的时间显示在上方
+                        reverse: true, 
                         ticks: {
                             callback: function(value) {
                                 const hours = Math.floor(value);
@@ -115,7 +111,6 @@ const StatisticsModule = (() => {
     };
 
     /**
-     * 更新周期图表（按天/周/月/年）
      * @param {string} period - 时间周期类型：'day', 'week', 'month', 'year'
      */
     const updatePeriodChart = (period) => {
@@ -125,27 +120,19 @@ const StatisticsModule = (() => {
             let filteredData = [];
             const currentDate = new Date();
             
-            // 调试所有可用数据日期
             console.log('所有可用数据日期:');
             allData.forEach(data => {
                 console.log(`- ${data.date}`);
             });
             
-            // 修复日期过滤逻辑 - 特别关注7-24日期
             switch (period) {
                 case 'day':
                     filteredData = [allData.find(data => data.date === StorageService.getTodayString())].filter(Boolean);
                     break;
                 case 'week':
-                    // 获取最近7天的数据 - 特别确保包含7-24
+
                     filteredData = allData.filter(data => {
-                        // 特别处理2025-07-24
-                        if (data.date === '2025-07-24') {
-                            console.log('找到特殊日期 2025-07-24');
-                            return true;
-                        }
                         
-                        // 标准日期过滤
                         try {
                             const [year, month, day] = data.date.split('-').map(Number);
                             const dataDate = new Date(year, month - 1, day);
@@ -157,7 +144,7 @@ const StatisticsModule = (() => {
                             const diffTime = today - dataDate;
                             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
                             
-                            return diffDays < 7; // 小于7天
+                            return diffDays < 7; 
                         } catch (error) {
                             console.error('日期过滤错误:', error);
                             return false;
@@ -165,15 +152,9 @@ const StatisticsModule = (() => {
                     });
                     break;
                 case 'month':
-                    // 获取最近30天的数据 - 特别确保包含7-24
+
                     filteredData = allData.filter(data => {
-                        // 特别处理2025-07-24
-                        if (data.date === '2025-07-24') {
-                            console.log('找到特殊日期 2025-07-24 (月视图)');
-                            return true;
-                        }
-                        
-                        // 标准日期过滤
+
                         try {
                             const [year, month, day] = data.date.split('-').map(Number);
                             const dataDate = new Date(year, month - 1, day);
@@ -193,15 +174,9 @@ const StatisticsModule = (() => {
                     });
                     break;
                 case 'year':
-                    // 获取最近365天的数据 - 特别确保包含7-24
+
                     filteredData = allData.filter(data => {
-                        // 特别处理2025-07-24
-                        if (data.date === '2025-07-24') {
-                            console.log('找到特殊日期 2025-07-24 (年视图)');
-                            return true;
-                        }
-                        
-                        // 标准日期过滤
+
                         try {
                             const [year, month, day] = data.date.split('-').map(Number);
                             const dataDate = new Date(year, month - 1, day);
@@ -227,20 +202,18 @@ const StatisticsModule = (() => {
                 console.log(`- 包含日期: ${data.date}`);
             });
             
-            // 按日期排序，从旧到新
+
             filteredData.sort((a, b) => {
                 const dateA = new Date(a.date);
                 const dateB = new Date(b.date);
                 return dateA - dateB;
             });
             
-            // 准备图表数据
             const labels = filteredData.map(data => {
                 const [year, month, day] = data.date.split('-').map(Number);
                 return `${month}/${day}`;
             });
             
-            // 准备各类收入数据
             const bodyHealthData = filteredData.map(data => data.totalEarnings?.bodyHealth || 0);
             const mentalHealthData = filteredData.map(data => data.totalEarnings?.mentalHealth || 0);
             const soulNourishmentData = filteredData.map(data => data.totalEarnings?.soulNourishment || 0);
@@ -248,7 +221,6 @@ const StatisticsModule = (() => {
             const socialBondsData = filteredData.map(data => data.totalEarnings?.socialBonds || 0);
             const totalIncomeData = filteredData.map(data => data.totalEarnings?.total || 0);
             
-            // 更新图表数据
             safeUpdateChart(periodChart, () => {
                 periodChart.data.labels = labels;
                 periodChart.data.datasets[0].data = bodyHealthData;
@@ -264,18 +236,15 @@ const StatisticsModule = (() => {
         }
     };
 
-    // 根据图表类型显示对应图表
     const showChartByType = (chartType) => {
-        // 隐藏所有图表
+
         document.getElementById('daily-chart').style.display = 'none';
         document.getElementById('period-chart').style.display = 'none';
         document.getElementById('sleep-chart').style.display = 'none';
         document.getElementById('wakeup-chart').style.display = 'none';
         
-        // 获取当前选中的周期
         const periodType = document.querySelector('.stat-period.active').dataset.period;
         
-        // 显示对应图表
         switch (chartType) {
             case 'income':
                 if (periodType === 'day') {
@@ -296,7 +265,6 @@ const StatisticsModule = (() => {
         }
     };
 
-    // 更新起床时间图表
     const updateWakeupChart = (period) => {
         try {
             console.log(`更新起床图表，周期: ${period}`);
@@ -304,15 +272,13 @@ const StatisticsModule = (() => {
             let filteredData = [];
             const currentDate = new Date();
             
-            // 使用相同的日期过滤逻辑
             switch (period) {
                 case 'day':
                     filteredData = [allData.find(data => data.date === StorageService.getTodayString())].filter(Boolean);
                     break;
                 case 'week':
-                    // 获取最近7天的数据，特别包含7-24
                     filteredData = allData.filter(data => {
-                        // 特别处理2025-07-24
+
                         if (data.date === '2025-07-24') {
                             return true;
                         }
@@ -335,12 +301,7 @@ const StatisticsModule = (() => {
                     });
                     break;
                 case 'month':
-                    // 获取最近30天的数据，特别包含7-24
                     filteredData = allData.filter(data => {
-                        // 特别处理2025-07-24
-                        if (data.date === '2025-07-24') {
-                            return true;
-                        }
                         
                         try {
                             const [year, month, day] = data.date.split('-').map(Number);
@@ -360,12 +321,7 @@ const StatisticsModule = (() => {
                     });
                     break;
                 case 'year':
-                    // 获取最近365天的数据，特别包含7-24
                     filteredData = allData.filter(data => {
-                        // 特别处理2025-07-24
-                        if (data.date === '2025-07-24') {
-                            return true;
-                        }
                         
                         try {
                             const [year, month, day] = data.date.split('-').map(Number);
@@ -386,14 +342,12 @@ const StatisticsModule = (() => {
                     break;
             }
             
-            // 按日期排序，从旧到新
             filteredData.sort((a, b) => {
                 const dateA = new Date(a.date);
                 const dateB = new Date(b.date);
                 return dateA - dateB;
             });
             
-            // 准备图表数据
             const labels = filteredData.map(data => {
                 const [year, month, day] = data.date.split('-').map(Number);
                 return `${month}/${day}`;
@@ -406,7 +360,6 @@ const StatisticsModule = (() => {
                 return wakeupDate.getHours() + (wakeupDate.getMinutes() / 60);
             });
             
-            // 获取目标起床时间
             let targetWakeupTime = 6; // 默认6:00
             const settings = filteredData.length > 0 && filteredData[filteredData.length - 1].earlyWakeSettings;
             if (settings) {
@@ -414,10 +367,8 @@ const StatisticsModule = (() => {
                 targetWakeupTime = hours + (minutes / 60);
             }
             
-            // 生成目标时间线
             const targetData = new Array(labels.length).fill(targetWakeupTime);
             
-            // 更新图表
             safeUpdateChart(wakeupChart, () => {
                 wakeupChart.data.labels = labels;
                 wakeupChart.data.datasets[0].data = wakeupData;
@@ -429,12 +380,10 @@ const StatisticsModule = (() => {
         }
     };
 
-    // 检查图表是否已初始化
     const isChartInitialized = (chart) => {
         return chart && chart.canvas && chart.canvas.getContext;
     };
     
-    // 安全地更新图表
     const safeUpdateChart = (chart, updateFunction) => {
         try {
             if (isChartInitialized(chart)) {
@@ -451,11 +400,9 @@ const StatisticsModule = (() => {
         }
     };
     
-    // 初始化统计模块
     const initialize = () => {
         console.log('初始化统计模块...');
         
-        // Check if Chart.js is available
         if (typeof Chart === 'undefined') {
             console.warn('Chart.js is not available, statistics module will be limited');
             setupLimitedStatistics();
@@ -463,25 +410,21 @@ const StatisticsModule = (() => {
         }
         
         try {
-            // 设置图表容器
+
             setupCharts();
 
             setupChartTabs(); 
 
             setupWakeupChart();     
 
-            // 设置周期切换
             setupPeriodSwitching();
             
-            // 设置图表类型切换
             if (document.querySelectorAll('.chart-tab').length > 0) {
                 setupChartTypeSwitching();
             }
             
-            // 设置数据导出
             setupDataExport();
             
-            // 初始显示每日数据
             setTimeout(() => {
                 updateDailyChart();
             }, 100);
@@ -574,7 +517,6 @@ const StatisticsModule = (() => {
         updateBasicStatistics();
     };
     
-    // 设置图表
     const setupCharts = () => {
         console.log('设置图表...');
         
@@ -584,7 +526,6 @@ const StatisticsModule = (() => {
             return;
         }
         
-        // 检查图表元素是否存在
         const dailyChartElem = document.getElementById('daily-chart');
         const periodChartElem = document.getElementById('period-chart');
         const sleepChartElem = document.getElementById('sleep-chart');
@@ -597,12 +538,10 @@ const StatisticsModule = (() => {
         try {
             const dailyChartCtx = dailyChartElem.getContext('2d');
             const periodChartCtx = periodChartElem.getContext('2d');
-            
-            // 配置全局Chart.js样式
+
             Chart.defaults.font.family = "'PingFang SC', 'Helvetica Neue', Arial, sans-serif";
             Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary');
             
-            // 初始化每日图表（扇形图）
             dailyChart = new Chart(dailyChartCtx, {
                 type: 'doughnut',
                 data: {
@@ -614,7 +553,7 @@ const StatisticsModule = (() => {
                             '#a5d8ff', // 浅蓝 - 心理健康
                             '#b5e6b5', // 淡绿 - 灵魂滋养
                             '#ffcf5c', // 浅黄 - 自我提升
-                            '#d4a5ff'  // 紫色 - 广结善缘（修改为紫色，增加区分度）
+                            '#d4a5ff'  // 紫色 - 广结善缘
                         ],
                         borderWidth: 0
                     }]
@@ -643,7 +582,6 @@ const StatisticsModule = (() => {
                 }
             });
             
-            // 初始化周期图表（折线图）
             periodChart = new Chart(periodChartCtx, {
                 type: 'line',
                 data: {
@@ -684,7 +622,7 @@ const StatisticsModule = (() => {
                         {
                             label: '广结善缘',
                             data: [],
-                            borderColor: '#d4a5ff', // 更新为紫色
+                            borderColor: '#d4a5ff', 
                             backgroundColor: '#d4a5ff20',
                             fill: true,
                             tension: 0.4
@@ -738,7 +676,6 @@ const StatisticsModule = (() => {
                 }
             });
             
-            // 如果存在睡眠图表元素，也初始化它
             if (sleepChartElem) {
                 const sleepChartCtx = sleepChartElem.getContext('2d');
                 sleepChart = new Chart(sleepChartCtx, {
@@ -1077,20 +1014,17 @@ const StatisticsModule = (() => {
     // 修改 setupPeriodSwitching 函数
     const setupPeriodSwitching = () => {
         document.querySelectorAll('.stat-period').forEach(btn => {
-            // 移除旧事件监听器
+
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
             
-            // 添加新的事件监听器
             newBtn.addEventListener('click', () => {
                 console.log('切换统计周期:', newBtn.dataset.period);
                 
-                // 移除所有按钮的active类
                 document.querySelectorAll('.stat-period').forEach(b => {
                     b.classList.remove('active');
                 });
                 
-                // 添加active类到当前按钮
                 newBtn.classList.add('active');
                 
                 const period = newBtn.dataset.period;
