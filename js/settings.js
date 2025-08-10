@@ -315,7 +315,9 @@ const SettingsModule = (() => {
                 dailyData: StorageService.getAllData(),
                 tasks: StorageService.getTaskTemplates(),
                 customCategories: StorageService.getCustomCategories(),
-                settings: StorageService.getSettings()
+                settings: StorageService.getSettings(),
+                redbookEntries: JSON.parse(localStorage.getItem('bloom_redbook_entries')) || [],
+                redbookSettings: JSON.parse(localStorage.getItem('bloom_redbook_settings')) || {}
             };
             
             // 转换为JSON
@@ -714,6 +716,15 @@ const SettingsModule = (() => {
         if (typeof data.settings !== 'object' || data.settings === null) {
             throw new Error('settings必须是对象格式');
         }
+        
+        // 验证红账本数据（可选字段，向后兼容）
+        if (data.redbookEntries && !Array.isArray(data.redbookEntries)) {
+            throw new Error('redbookEntries必须是数组格式');
+        }
+        
+        if (data.redbookSettings && (typeof data.redbookSettings !== 'object' || data.redbookSettings === null)) {
+            throw new Error('redbookSettings必须是对象格式');
+        }
     };
     
     // 显示导入确认对话框
@@ -722,6 +733,8 @@ const SettingsModule = (() => {
         const dailyRecordsCount = importedData.dailyData.length;
         const categoriesCount = Object.keys(importedData.tasks).length;
         const customCategoriesCount = importedData.customCategories.length;
+        const redbookEntriesCount = importedData.redbookEntries ? importedData.redbookEntries.length : 0;
+        const hasRedbookSettings = importedData.redbookSettings ? 1 : 0;
         
         // 创建确认对话框
         const confirmDialog = document.createElement('div');
@@ -739,6 +752,8 @@ const SettingsModule = (() => {
                         <li>任务类别: ${categoriesCount} 个</li>
                         <li>自定义类别: ${customCategoriesCount} 个</li>
                         <li>应用设置: 1 份</li>
+                        ${redbookEntriesCount > 0 ? `<li>红账本记录: ${redbookEntriesCount} 条</li>` : ''}
+                        ${hasRedbookSettings > 0 ? `<li>红账本设置: 1 份</li>` : ''}
                     </ul>
                 </div>
                 <div class="import-mode">
@@ -798,6 +813,14 @@ const SettingsModule = (() => {
                 localStorage.setItem(StorageService.KEYS.TASKS, JSON.stringify(importedData.tasks));
                 localStorage.setItem(StorageService.KEYS.CUSTOM_CATEGORIES, JSON.stringify(importedData.customCategories));
                 localStorage.setItem(StorageService.KEYS.SETTINGS, JSON.stringify(importedData.settings));
+                
+                // 导入红账本数据（如果存在）
+                if (importedData.redbookEntries) {
+                    localStorage.setItem('bloom_redbook_entries', JSON.stringify(importedData.redbookEntries));
+                }
+                if (importedData.redbookSettings) {
+                    localStorage.setItem('bloom_redbook_settings', JSON.stringify(importedData.redbookSettings));
+                }
             } else {
                 // 合并模式：智能合并数据
                 mergeImportData(importedData);
@@ -853,11 +876,31 @@ const SettingsModule = (() => {
         const existingSettings = StorageService.getSettings();
         const mergedSettings = {...importedData.settings, ...existingSettings};
         
+        // 合并红账本数据（如果存在）
+        let mergedRedbookEntries = JSON.parse(localStorage.getItem('bloom_redbook_entries')) || [];
+        if (importedData.redbookEntries && Array.isArray(importedData.redbookEntries)) {
+            // 合并红账本条目，按ID去重
+            const existingEntryIds = new Set(mergedRedbookEntries.map(entry => entry.id));
+            importedData.redbookEntries.forEach(entry => {
+                if (!existingEntryIds.has(entry.id)) {
+                    mergedRedbookEntries.push(entry);
+                }
+            });
+        }
+        
+        let mergedRedbookSettings = JSON.parse(localStorage.getItem('bloom_redbook_settings')) || {};
+        if (importedData.redbookSettings && typeof importedData.redbookSettings === 'object') {
+            // 合并红账本设置，保留现有设置
+            mergedRedbookSettings = {...importedData.redbookSettings, ...mergedRedbookSettings};
+        }
+        
         // 保存合并后的数据
         localStorage.setItem(StorageService.KEYS.DAILY_DATA, JSON.stringify(mergedDailyData));
         localStorage.setItem(StorageService.KEYS.TASKS, JSON.stringify(mergedTasks));
         localStorage.setItem(StorageService.KEYS.CUSTOM_CATEGORIES, JSON.stringify(mergedCategories));
         localStorage.setItem(StorageService.KEYS.SETTINGS, JSON.stringify(mergedSettings));
+        localStorage.setItem('bloom_redbook_entries', JSON.stringify(mergedRedbookEntries));
+        localStorage.setItem('bloom_redbook_settings', JSON.stringify(mergedRedbookSettings));
     };
     
     // 执行手动备份
