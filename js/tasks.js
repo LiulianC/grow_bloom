@@ -10,9 +10,24 @@ const getStorageKey = (keyName) => {
 
 
 const TasksModule = (() => {
-    const DEFAULT_CATEGORIES = ['身体健康', '心理健康', '灵魂滋养', '自我提升', '广结善缘'];
+    const DEFAULT_CATEGORIES = ['身体健康（保持）', '内心关怀', '灵魂滋养（保持）', '自我提升（保持）', '广结善缘（保持）'];
+    
+    // 类别初衷说明
+    const CATEGORY_MOTTOS = {
+        '身体健康（保持）': '身体是革命的本钱',
+        '内心关怀': '爱自己是浪漫的开始',
+        '灵魂滋养（保持）': '"灵魂滋养"这个概念，强调的不是外在成就，而是内在生命的丰盈与安宁。',
+        '自我提升（保持）': '不积跬步，无以至千里；不积小流，无以成江海。',
+        '广结善缘（保持）': '没有人是一座孤岛，能够自全；每个人都是大陆的一片，整体的一部分。'
+    };
     
     const CATEGORY_EARNING_MAPPING = {
+        '身体健康（保持）': 'bodyHealth',
+        '内心关怀': 'mentalHealth',
+        '灵魂滋养（保持）': 'soulNourishment',
+        '自我提升（保持）': 'selfImprovement',
+        '广结善缘（保持）': 'socialBonds',
+        // 向后兼容性映射
         '身体健康': 'bodyHealth',
         '心理健康': 'mentalHealth',
         '灵魂滋养': 'soulNourishment',
@@ -22,6 +37,9 @@ const TasksModule = (() => {
     
     const initialize = () => {
         console.log('初始化任务模块...');
+        
+        // 执行数据迁移
+        migrateCategoryNames();
         
         loadCategories();
         diagnoseAndFixCategoryIssues();
@@ -42,6 +60,68 @@ const TasksModule = (() => {
                 document.getElementById('add-task-modal').classList.remove('hidden');
             });
         }
+    };
+    
+    // 数据迁移：处理旧的类别名称
+    const migrateCategoryNames = () => {
+        console.log('执行类别名称迁移...');
+        
+        const categoryMigrationMap = {
+            '身体健康': '身体健康（保持）',
+            '心理健康': '内心关怀',
+            '灵魂滋养': '灵魂滋养（保持）',
+            '自我提升': '自我提升（保持）',
+            '广结善缘': '广结善缘（保持）'
+        };
+        
+        // 迁移历史数据
+        const allData = StorageService.getAllData();
+        let migrationPerformed = false;
+        
+        allData.forEach(dayData => {
+            if (dayData.completedTasks) {
+                dayData.completedTasks.forEach(task => {
+                    if (categoryMigrationMap[task.category]) {
+                        console.log(`迁移任务类别: ${task.category} -> ${categoryMigrationMap[task.category]}`);
+                        task.category = categoryMigrationMap[task.category];
+                        migrationPerformed = true;
+                    }
+                });
+            }
+        });
+        
+        if (migrationPerformed) {
+            localStorage.setItem('bloom_daily_data', JSON.stringify(allData));
+            console.log('类别名称迁移完成');
+        } else {
+            console.log('无需迁移数据');
+        }
+    };
+    
+    // 显示类别初衷
+    const displayCategoryMotto = (category) => {
+        const motto = CATEGORY_MOTTOS[category];
+        if (!motto) return;
+        
+        const tabContent = document.querySelector(`.tab-content[data-category="${category}"]`);
+        if (!tabContent) return;
+        
+        // 检查是否已经有初衷显示
+        let mottoElement = tabContent.querySelector('.category-motto');
+        if (!mottoElement) {
+            mottoElement = document.createElement('div');
+            mottoElement.className = 'category-motto';
+            
+            // 插入到任务列表之前
+            const tasksList = tabContent.querySelector('.tasks-list');
+            if (tasksList) {
+                tabContent.insertBefore(mottoElement, tasksList);
+            } else {
+                tabContent.appendChild(mottoElement);
+            }
+        }
+        
+        mottoElement.textContent = motto;
     };
     
     const ensureEventBindings = () => {
@@ -345,6 +425,9 @@ const TasksModule = (() => {
         targetTabBtn.classList.add('active');
         targetTabContent.classList.add('active');
         
+        // 显示类别初衷
+        displayCategoryMotto(category);
+        
         console.log(`标签切换成功: ${category}`);
         
         const tasksContainer = document.getElementById(`tasks-${category}`);
@@ -578,6 +661,9 @@ const TasksModule = (() => {
         });
         
         console.log(`今日任务加载完成，共 ${completedTasks.length} 个已完成任务`);
+        
+        // 显示默认活动标签的类别初衷
+        displayCategoryMotto('身体健康（保持）');
     };
     
     const setupWakeupButton = () => {
@@ -592,7 +678,7 @@ const TasksModule = (() => {
             
             const wakeupTask = {
                 id: `wakeup-${Date.now()}`,
-                category: '身体健康',
+                category: '身体健康（保持）',
                 name: '起床打卡',
                 completed: true,
                 date: wakeupTime,
@@ -681,7 +767,7 @@ const TasksModule = (() => {
             
             const sleepTask = {
                 id: `sleep-${Date.now()}`,
-                category: '身体健康',
+                category: '身体健康（保持）',
                 name: '睡觉打卡',
                 completed: true,
                 date: now.toISOString(),
@@ -1081,7 +1167,7 @@ const TasksModule = (() => {
                 
                 const earlyWakeTask = {
                     id: `early-wake-${Date.now()}`,
-                    category: '身体健康',
+                    category: '身体健康（保持）',
                     name: '早起打卡成功',
                     completed: true,
                     date: now.toISOString(),
@@ -1123,7 +1209,7 @@ const TasksModule = (() => {
                 
                 const earlySleepTask = {
                     id: `early-sleep-${Date.now()}`,
-                    category: '身体健康',
+                    category: '身体健康（保持）',
                     name: '早睡打卡成功',
                     completed: true,
                     date: now.toISOString(),

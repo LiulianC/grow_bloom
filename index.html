@@ -15,8 +15,11 @@
         <!-- 顶部导航 -->
         <header>
             <div class="logo">
-                <i class="fas fa-seedling"></i>
-                <h1>成长小账本</h1>
+                <div class="logo-header">
+                    <i class="fas fa-seedling"></i>
+                    <h1>成长小账本</h1>
+                </div>
+                <p class="app-motto">游戏思维成长，通过量化经营自己的生活，提高自己的幸福基线，让自己对生活充满动力和活力，自主支配自己的生活，更好地对自己负责。</p>
             </div>
             <nav>
                 <!-- 调整顺序，设置按钮放在切换主题按钮左侧 -->
@@ -142,34 +145,34 @@
                     </div>
                     <div class="card-body">
                         <div class="tabs">
-                            <button class="tab-btn active" data-category="身体健康">身体健康</button>
-                            <button class="tab-btn" data-category="心理健康">心理健康</button>
-                            <button class="tab-btn" data-category="灵魂滋养">灵魂滋养</button>
-                            <button class="tab-btn" data-category="自我提升">自我提升</button>
-                            <button class="tab-btn" data-category="广结善缘">广结善缘</button>
+                            <button class="tab-btn active" data-category="身体健康（保持）">身体健康（保持）</button>
+                            <button class="tab-btn" data-category="内心关怀">内心关怀</button>
+                            <button class="tab-btn" data-category="灵魂滋养（保持）">灵魂滋养（保持）</button>
+                            <button class="tab-btn" data-category="自我提升（保持）">自我提升（保持）</button>
+                            <button class="tab-btn" data-category="广结善缘（保持）">广结善缘（保持）</button>
                             <button class="tab-btn" data-category="custom" id="custom-tab" title="自定义类别" aria-label="查看自定义任务类别">
                                 <i class="fas fa-ellipsis-h"></i>
                             </button>
                         </div>
                         
-                        <div class="tab-content active" data-category="身体健康">
-                            <div class="tasks-list" id="tasks-身体健康"></div>
+                        <div class="tab-content active" data-category="身体健康（保持）">
+                            <div class="tasks-list" id="tasks-身体健康（保持）"></div>
                         </div>
                         
-                        <div class="tab-content" data-category="心理健康">
-                            <div class="tasks-list" id="tasks-心理健康"></div>
+                        <div class="tab-content" data-category="内心关怀">
+                            <div class="tasks-list" id="tasks-内心关怀"></div>
                         </div>
                         
-                        <div class="tab-content" data-category="灵魂滋养">
-                            <div class="tasks-list" id="tasks-灵魂滋养"></div>
+                        <div class="tab-content" data-category="灵魂滋养（保持）">
+                            <div class="tasks-list" id="tasks-灵魂滋养（保持）"></div>
                         </div>
                         
-                        <div class="tab-content" data-category="自我提升">
-                            <div class="tasks-list" id="tasks-自我提升"></div>
+                        <div class="tab-content" data-category="自我提升（保持）">
+                            <div class="tasks-list" id="tasks-自我提升（保持）"></div>
                         </div>
                         
-                        <div class="tab-content" data-category="广结善缘">
-                            <div class="tasks-list" id="tasks-广结善缘"></div>
+                        <div class="tab-content" data-category="广结善缘（保持）">
+                            <div class="tasks-list" id="tasks-广结善缘（保持）"></div>
                         </div>
                         
                         <div class="tab-content" data-category="custom">
@@ -332,11 +335,11 @@
                     <div class="form-group">
                         <label for="task-category">任务类别</label>
                         <select id="task-category" required>
-                            <option value="身体健康">身体健康</option>
-                            <option value="心理健康">心理健康</option>
-                            <option value="灵魂滋养">灵魂滋养</option>
-                            <option value="自我提升">自我提升</option>
-                            <option value="广结善缘">广结善缘</option>
+                            <option value="身体健康（保持）">身体健康（保持）</option>
+                            <option value="内心关怀">内心关怀</option>
+                            <option value="灵魂滋养（保持）">灵魂滋养（保持）</option>
+                            <option value="自我提升（保持）">自我提升（保持）</option>
+                            <option value="广结善缘（保持）">广结善缘（保持）</option>
                         </select>
                         <button type="button" id="add-category-btn" class="text-btn">添加自定义类别</button>
                     </div>
