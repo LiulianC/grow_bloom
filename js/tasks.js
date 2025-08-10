@@ -262,26 +262,26 @@ const TasksModule = (() => {
     };
 
     const ensureBodyHealthStructure = () => {
-        console.log('检查身体健康类别结构...');
+        console.log('检查身体健康（保持）类别结构...');
         
-        const healthTabContent = document.querySelector('.tab-content[data-category="身体健康"]');
+        const healthTabContent = document.querySelector('.tab-content[data-category="身体健康（保持）"]');
         
         if (healthTabContent) {
             let tasksContainer = healthTabContent.querySelector('.tasks-list');
             
             if (!tasksContainer) {
-                console.log('身体健康类别缺少任务列表容器，正在创建...');
+                console.log('身体健康（保持）类别缺少任务列表容器，正在创建...');
                 
                 tasksContainer = document.createElement('div');
                 tasksContainer.className = 'tasks-list';
-                tasksContainer.id = 'tasks-身体健康';
+                tasksContainer.id = 'tasks-身体健康（保持）';
                 
                 healthTabContent.appendChild(tasksContainer);
                 
-                console.log('身体健康任务列表容器创建完成');
+                console.log('身体健康（保持）任务列表容器创建完成');
             }
         } else {
-            console.error('找不到身体健康的标签内容');
+            console.error('找不到身体健康（保持）的标签内容');
         }
     };    
 
