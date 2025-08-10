@@ -207,6 +207,89 @@
                     </div>
                 </div>
             </section>
+
+            <!-- 红账本 -->
+            <section id="redbook-section">
+                <!-- 主页面 -->
+                <div id="redbook-main-page" class="redbook-page">
+                    <div class="card redbook-card">
+                        <div class="card-header redbook-header">
+                            <h2><i class="fas fa-heart"></i> 红账本</h2>
+                            <div class="redbook-controls">
+                                <button id="redbook-search-btn" class="icon-btn" title="搜索历史记录" aria-label="搜索历史记录">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <button id="add-redbook-entry-btn" class="icon-btn primary" title="添加美好时刻" aria-label="添加新的美好时刻">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="redbook-today-section">
+                                <h3>今日美好时刻</h3>
+                                <div id="redbook-today-entries" class="redbook-entries-list">
+                                    <!-- 今日条目将动态加载到这里 -->
+                                </div>
+                            </div>
+                            <div class="redbook-actions">
+                                <button id="redbook-history-btn" class="secondary-btn">
+                                    <i class="fas fa-history"></i> 历史红账
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 详情页面 -->
+                <div id="redbook-detail-page" class="redbook-page" style="display: none;">
+                    <div class="card redbook-card">
+                        <div class="card-header redbook-header">
+                            <button id="redbook-back-to-main" class="icon-btn" title="返回主页" aria-label="返回红账本主页">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <h2>美好时刻</h2>
+                            <div class="redbook-controls">
+                                <button id="redbook-edit-btn" class="icon-btn" title="编辑" aria-label="编辑这条记录">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button id="redbook-delete-btn" class="icon-btn danger" title="删除" aria-label="删除这条记录">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="redbook-detail-content" id="redbook-detail-content">
+                                <!-- 详细内容将动态填充 -->
+                            </div>
+                            <div class="redbook-detail-time" id="redbook-detail-time">
+                                <!-- 时间信息将动态填充 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 历史页面 -->
+                <div id="redbook-history-page" class="redbook-page" style="display: none;">
+                    <div class="card redbook-card">
+                        <div class="card-header redbook-header">
+                            <button id="redbook-back-to-history" class="icon-btn" title="返回主页" aria-label="返回红账本主页">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <h2>历史红账</h2>
+                            <div class="redbook-controls">
+                                <button id="redbook-search-btn-history" class="icon-btn" title="搜索" aria-label="搜索历史记录">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="redbook-history-entries" class="redbook-history-list">
+                                <!-- 历史条目将动态加载到这里 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
 
         <!-- 底部导航 -->
@@ -227,6 +310,10 @@
                 <button class="nav-item" data-target="statistics-section">
                     <i class="fas fa-chart-pie"></i>
                     <span>统计</span>
+                </button>
+                <button class="nav-item" data-target="redbook-section">
+                    <i class="fas fa-heart"></i>
+                    <span>红账本</span>
                 </button>
             </nav>
         </footer>
@@ -409,6 +496,56 @@
                 </div>
             </div>
         </div>
+
+        <!-- 红账本添加/编辑条目模态框 -->
+        <div id="redbook-add-entry-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3>记录美好时刻</h3>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="redbook-entry-form">
+                    <div class="form-group">
+                        <label for="redbook-entry-content">今天有什么美好的时刻想要记录？</label>
+                        <textarea 
+                            id="redbook-entry-content" 
+                            rows="6" 
+                            placeholder="记录下这一刻的美好与宁静...&#10;&#10;可以是：&#10;• 看到的美景&#10;• 内心的感动&#10;• 宁静的时刻&#10;• 温暖的回忆"
+                            required></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="primary-btn redbook-btn">添加</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 红账本搜索模态框 -->
+        <div id="redbook-search-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3>搜索历史红账</h3>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="redbook-search-form">
+                    <div class="form-group">
+                        <label for="redbook-search-keyword">关键字搜索</label>
+                        <input type="text" id="redbook-search-keyword" placeholder="输入要搜索的关键字">
+                    </div>
+                    <div class="form-group">
+                        <label>日期范围</label>
+                        <div class="date-range-inputs">
+                            <input type="date" id="redbook-search-start-date" title="起始日期">
+                            <span>至</span>
+                            <input type="date" id="redbook-search-end-date" title="结束日期">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="primary-btn redbook-btn">搜索</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- 脚本加载 -->
@@ -419,6 +556,7 @@
     <script src="js/statistics.js"></script>
     <script src="js/notifications.js"></script>
     <script src="js/settings.js"></script>
+    <script src="js/redbook.js"></script>
     <script src="js/app.js"></script>
     <script>
         // 注册 Service Worker

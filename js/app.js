@@ -51,7 +51,10 @@ function initializeModules() {
     StatisticsModule.initialize();
 
     // 初始化设置模块
-    SettingsModule.initialize();    
+    SettingsModule.initialize();
+
+    // 初始化红账本模块
+    RedbookModule.initialize();
 }
 
 // 设置主题切换
@@ -129,6 +132,14 @@ function setupNavigation() {
                 if (targetId === 'statistics-section') {
                     if (typeof StatisticsModule !== 'undefined' && StatisticsModule.updateDailyChart) {
                         StatisticsModule.updateDailyChart();
+                    }
+                }
+                
+                // 如果是红账本页面，确保显示主页面并加载今日条目
+                if (targetId === 'redbook-section') {
+                    if (typeof RedbookModule !== 'undefined') {
+                        RedbookModule.showMainPage();
+                        RedbookModule.loadTodayEntries();
                     }
                 }
             } else {

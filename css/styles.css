@@ -1058,3 +1058,381 @@ button.secondary-btn:disabled {
 .checkin-time.hidden {
     display: none;
 }
+
+/* ============================================
+   红账本样式 - 温暖红色主题
+   ============================================ */
+
+/* 红账本专用颜色变量 */
+.redbook-card,
+.redbook-card * {
+    --redbook-primary: #e74c3c;
+    --redbook-secondary: #f8c3cd;
+    --redbook-accent: #ff6b7a;
+    --redbook-warm: #fef0f0;
+    --redbook-light: #fff5f5;
+    --redbook-text: #2c1810;
+    --redbook-text-light: #6a4c93;
+    --redbook-shadow: 0 4px 12px rgba(231, 76, 60, 0.1);
+}
+
+/* 红账本主容器 */
+#redbook-section {
+    background: linear-gradient(135deg, var(--redbook-light) 0%, var(--redbook-warm) 100%);
+    min-height: 100vh;
+    padding: var(--spacing-md);
+}
+
+/* 红账本卡片 */
+.redbook-card {
+    background: var(--bg-card);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--redbook-shadow);
+    border: 2px solid var(--redbook-secondary);
+    overflow: hidden;
+}
+
+/* 红账本头部 */
+.redbook-header {
+    background: linear-gradient(135deg, var(--redbook-primary) 0%, var(--redbook-accent) 100%);
+    color: white;
+    padding: var(--spacing-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.redbook-header h2 {
+    color: white;
+    font-size: 1.5rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.redbook-header h2 i {
+    color: var(--redbook-secondary);
+}
+
+.redbook-controls {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+/* 红账本按钮样式 */
+.redbook-btn,
+.primary-btn.redbook-btn {
+    background: linear-gradient(135deg, var(--redbook-primary) 0%, var(--redbook-accent) 100%);
+    border: none;
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    font-weight: 500;
+    transition: all var(--transition-speed);
+}
+
+.redbook-btn:hover,
+.primary-btn.redbook-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(231, 76, 60, 0.3);
+}
+
+/* 头部图标按钮 */
+.redbook-header .icon-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-speed);
+}
+
+.redbook-header .icon-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.redbook-header .icon-btn.primary {
+    background: var(--redbook-secondary);
+    color: var(--redbook-primary);
+    border-color: var(--redbook-secondary);
+}
+
+.redbook-header .icon-btn.danger {
+    background: rgba(239, 108, 117, 0.2);
+    color: white;
+    border-color: rgba(239, 108, 117, 0.5);
+}
+
+/* 今日红账区域 */
+.redbook-today-section h3 {
+    color: var(--redbook-primary);
+    font-size: 1.2rem;
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.redbook-today-section h3::before {
+    content: "✨";
+    font-size: 1.1em;
+}
+
+/* 红账条目列表 */
+.redbook-entries-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+/* 红账条目项 */
+.redbook-entry-item {
+    background: var(--redbook-light);
+    border: 2px solid var(--redbook-secondary);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    cursor: pointer;
+    transition: all var(--transition-speed);
+    position: relative;
+    overflow: hidden;
+}
+
+.redbook-entry-item::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to bottom, var(--redbook-primary), var(--redbook-accent));
+}
+
+.redbook-entry-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--redbook-shadow);
+    border-color: var(--redbook-accent);
+}
+
+/* 红账预览内容 */
+.redbook-entry-preview {
+    color: var(--redbook-text);
+    line-height: 1.6;
+    margin-bottom: var(--spacing-sm);
+    font-size: 0.95rem;
+}
+
+/* 红账时间 */
+.redbook-entry-time {
+    color: var(--redbook-text-light);
+    font-size: 0.8rem;
+    text-align: right;
+    font-weight: 500;
+}
+
+/* 空状态 */
+.redbook-empty-state {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--redbook-text-light);
+}
+
+.redbook-empty-state i {
+    font-size: 3rem;
+    color: var(--redbook-secondary);
+    margin-bottom: var(--spacing-md);
+    display: block;
+}
+
+.redbook-empty-state p {
+    margin: var(--spacing-sm) 0;
+    font-size: 0.9rem;
+}
+
+.redbook-empty-state p:first-of-type {
+    font-weight: 600;
+    color: var(--redbook-primary);
+}
+
+/* 红账操作区域 */
+.redbook-actions {
+    padding-top: var(--spacing-md);
+    border-top: 2px solid var(--redbook-secondary);
+    text-align: center;
+}
+
+/* 详情页面样式 */
+.redbook-detail-content {
+    background: var(--redbook-light);
+    border: 2px solid var(--redbook-secondary);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.8;
+    color: var(--redbook-text);
+    font-size: 1rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    position: relative;
+}
+
+.redbook-detail-content::before {
+    content: """;
+    position: absolute;
+    top: -10px;
+    left: 10px;
+    font-size: 4rem;
+    color: var(--redbook-secondary);
+    font-family: serif;
+}
+
+.redbook-detail-time {
+    text-align: right;
+    color: var(--redbook-text-light);
+    font-size: 0.85rem;
+    font-style: italic;
+    padding: var(--spacing-sm);
+    background: var(--redbook-warm);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--redbook-secondary);
+}
+
+/* 历史页面样式 */
+.redbook-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.redbook-date-group {
+    border: 2px solid var(--redbook-secondary);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    background: var(--redbook-light);
+}
+
+.redbook-date-header {
+    background: linear-gradient(135deg, var(--redbook-secondary) 0%, var(--redbook-warm) 100%);
+    color: var(--redbook-primary);
+    padding: var(--spacing-md);
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-bottom: 2px solid var(--redbook-secondary);
+}
+
+.redbook-date-entries {
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+/* 红账本模态框样式 */
+#redbook-add-entry-modal .modal-header,
+#redbook-search-modal .modal-header {
+    background: linear-gradient(135deg, var(--redbook-primary) 0%, var(--redbook-accent) 100%);
+    color: white;
+}
+
+#redbook-add-entry-modal .modal-header h3,
+#redbook-search-modal .modal-header h3 {
+    color: white;
+}
+
+#redbook-entry-content {
+    border: 2px solid var(--redbook-secondary);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-md);
+    font-family: inherit;
+    line-height: 1.6;
+    resize: vertical;
+    min-height: 120px;
+    background: var(--redbook-light);
+}
+
+#redbook-entry-content:focus {
+    border-color: var(--redbook-primary);
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+    outline: none;
+}
+
+/* 搜索表单样式 */
+.date-range-inputs {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.date-range-inputs input[type="date"] {
+    flex: 1;
+    border: 2px solid var(--redbook-secondary);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm);
+}
+
+.date-range-inputs span {
+    color: var(--redbook-primary);
+    font-weight: 500;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    #redbook-section {
+        padding: var(--spacing-sm);
+    }
+    
+    .redbook-header {
+        padding: var(--spacing-md);
+    }
+    
+    .redbook-header h2 {
+        font-size: 1.3rem;
+    }
+    
+    .redbook-controls {
+        gap: var(--spacing-xs);
+    }
+    
+    .redbook-header .icon-btn {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .redbook-detail-content {
+        padding: var(--spacing-md);
+    }
+    
+    .date-range-inputs {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .date-range-inputs span {
+        text-align: center;
+        font-size: 0.9rem;
+    }
+}
+
+/* 红账本页面容器 */
+.redbook-page {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* 导航栏红账本图标颜色 */
+.nav-item[data-target="redbook-section"] i {
+    color: var(--redbook-primary);
+}
+
+.nav-item[data-target="redbook-section"].active {
+    background: linear-gradient(135deg, var(--redbook-light) 0%, var(--redbook-warm) 100%);
+    border-top: 3px solid var(--redbook-primary);
+}
