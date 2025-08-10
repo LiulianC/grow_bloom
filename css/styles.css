@@ -1066,14 +1066,14 @@ button.secondary-btn:disabled {
 /* 红账本专用颜色变量 */
 .redbook-card,
 .redbook-card * {
-    --redbook-primary: #e74c3c;
-    --redbook-secondary: #f8c3cd;
-    --redbook-accent: #ff6b7a;
-    --redbook-warm: #fef0f0;
-    --redbook-light: #fff5f5;
-    --redbook-text: #2c1810;
-    --redbook-text-light: #6a4c93;
-    --redbook-shadow: 0 4px 12px rgba(231, 76, 60, 0.1);
+    --redbook-primary: var(--primary-color);
+    --redbook-secondary: var(--border-color);
+    --redbook-accent: var(--secondary-color);
+    --redbook-warm: var(--bg-secondary);
+    --redbook-light: var(--bg-card);
+    --redbook-text: var(--text-primary);
+    --redbook-text-light: var(--text-secondary);
+    --redbook-shadow: var(--shadow-md);
 }
 
 /* 红账本主容器 */
