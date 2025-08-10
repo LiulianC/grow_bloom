@@ -548,12 +548,14 @@ button:disabled {
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
     width: 100%;
     padding: var(--spacing-sm);
     border-radius: var(--border-radius-sm);
     border: 1px solid var(--border-color);
     background-color: var(--bg-secondary);
+    box-sizing: border-box;
 }
 
 .form-actions {
@@ -1347,6 +1349,7 @@ button.secondary-btn:disabled {
 }
 
 #redbook-entry-content {
+    width: 100%;
     border: 2px solid var(--redbook-secondary);
     border-radius: var(--border-radius-sm);
     padding: var(--spacing-md);
@@ -1355,6 +1358,7 @@ button.secondary-btn:disabled {
     resize: vertical;
     min-height: 120px;
     background: var(--redbook-light);
+    box-sizing: border-box;
 }
 
 #redbook-entry-content:focus {
