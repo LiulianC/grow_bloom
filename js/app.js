@@ -553,7 +553,9 @@ function exportAllDataFunction() {
             dailyData: JSON.parse(localStorage.getItem('bloom_daily_data')) || [],
             tasks: JSON.parse(localStorage.getItem('bloom_tasks')) || {},
             customCategories: JSON.parse(localStorage.getItem('bloom_custom_categories')) || [],
-            settings: JSON.parse(localStorage.getItem('bloom_settings')) || {}
+            settings: JSON.parse(localStorage.getItem('bloom_settings')) || {},
+            redbookEntries: JSON.parse(localStorage.getItem('bloom_redbook_entries')) || [],
+            redbookSettings: JSON.parse(localStorage.getItem('bloom_redbook_settings')) || {}
         };
         
         // 转换为JSON
