@@ -27,7 +27,9 @@ const StorageService = (() => {
         if (!localStorage.getItem(KEYS.SETTINGS)) {
             localStorage.setItem(KEYS.SETTINGS, JSON.stringify({
                 darkMode: false,
-                notificationsEnabled: true
+                notificationsEnabled: true,
+                autoBackupEnabled: true,
+                lastBackupDate: null
             }));
         }
     };
@@ -185,7 +187,9 @@ const StorageService = (() => {
     const getSettings = () => {
         return JSON.parse(localStorage.getItem(KEYS.SETTINGS)) || {
             darkMode: false,
-            notificationsEnabled: true
+            notificationsEnabled: true,
+            autoBackupEnabled: true,
+            lastBackupDate: null
         };
     };
 

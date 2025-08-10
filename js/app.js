@@ -20,6 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 显示当前日期
     displayCurrentDate();
     
+    // 检查并执行自动备份
+    checkAndPerformAutoBackup();
+    
     // 添加额外的修复和确保功能正常
     ensureAllFunctionsWork();
 });
@@ -1395,3 +1398,121 @@ function updateWakeupUI(checkInTime, hasReward) {
 
 // 全局可访问的更新函数（供其他模块调用）
 window.updateDailyOverview = updateDailyOverview;
+
+// 检查并执行自动备份
+function checkAndPerformAutoBackup() {
+    try {
+        const settings = StorageService.getSettings();
+        
+        // 如果自动备份被禁用，直接返回
+        if (!settings.autoBackupEnabled) {
+            console.log('自动备份已禁用');
+            return;
+        }
+        
+        const today = new Date().toISOString().split('T')[0];
+        const lastBackupDate = settings.lastBackupDate;
+        
+        // 如果今天还没有备份过，执行备份
+        if (lastBackupDate !== today) {
+            console.log('执行自动备份...');
+            performAutoBackup(today);
+        } else {
+            console.log('今天已经完成自动备份');
+        }
+    } catch (error) {
+        console.error('检查自动备份时出错:', error);
+    }
+}
+
+// 执行自动备份
+function performAutoBackup(todayString) {
+    try {
+        // 收集所有数据
+        const backupData = {
+            dailyData: StorageService.getAllData(),
+            tasks: StorageService.getTaskTemplates(),
+            customCategories: StorageService.getCustomCategories(),
+            settings: StorageService.getSettings(),
+            exportDate: new Date().toISOString(),
+            version: "1.0"
+        };
+        
+        const fileName = `bloom_auto_backup_${todayString}.json`;
+        
+        // 下载备份文件
+        downloadJSON(backupData, fileName);
+        
+        // 更新最后备份日期
+        StorageService.updateSettings({
+            lastBackupDate: todayString
+        });
+        
+        // 清理旧备份记录（这里只是更新设置，实际文件清理需要用户手动操作）
+        cleanupOldBackups();
+        
+        // 显示成功通知
+        NotificationsModule.showNotification('自动备份完成', `已生成备份文件: ${fileName}`);
+        
+        console.log('自动备份完成:', fileName);
+        
+    } catch (error) {
+        console.error('自动备份失败:', error);
+        NotificationsModule.showNotification('自动备份失败', `备份过程中出错: ${error.message}`);
+    }
+}
+
+// 通用JSON下载函数（用于自动备份）
+function downloadJSON(data, fileName) {
+    const jsonData = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonData], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    
+    setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }, 100);
+}
+
+// 清理旧备份记录
+function cleanupOldBackups() {
+    try {
+        // 由于浏览器环境的限制，我们无法直接删除用户下载的文件
+        // 这里只是记录清理信息，提醒用户可以手动清理旧文件
+        const settings = StorageService.getSettings();
+        const backupHistory = settings.backupHistory || [];
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        // 过滤出最近7天的备份记录
+        const recentBackups = backupHistory.filter(backup => {
+            const backupDate = new Date(backup.date);
+            return backupDate >= sevenDaysAgo;
+        });
+        
+        // 添加今天的备份记录
+        const today = new Date().toISOString().split('T')[0];
+        if (!recentBackups.some(backup => backup.date === today)) {
+            recentBackups.push({
+                date: today,
+                fileName: `bloom_auto_backup_${today}.json`
+            });
+        }
+        
+        // 更新备份历史记录
+        StorageService.updateSettings({
+            backupHistory: recentBackups
+        });
+        
+        console.log('备份历史记录已更新，保留最近7天的记录');
+        
+    } catch (error) {
+        console.error('清理备份记录时出错:', error);
+    }
+}

@@ -304,9 +304,27 @@
                         <button id="export-all-data" class="secondary-btn">
                             <i class="fas fa-download"></i> 导出所有数据
                         </button>
+                        <button id="import-data" class="secondary-btn">
+                            <i class="fas fa-upload"></i> 导入数据
+                        </button>
+                        <button id="manual-backup" class="secondary-btn">
+                            <i class="fas fa-save"></i> 手动备份
+                        </button>
                         <button id="clear-data" class="danger-btn">
                             <i class="fas fa-trash"></i> 清除所有数据
                         </button>
+                    </div>
+                    
+                    <!-- 隐藏的文件输入 -->
+                    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                    
+                    <!-- 自动备份设置 -->
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="auto-backup-toggle" checked>
+                            <span>启用每日自动备份</span>
+                        </label>
+                        <p class="setting-desc">每天首次使用时自动备份数据，保留最近7天</p>
                     </div>
                 </div>
                 
