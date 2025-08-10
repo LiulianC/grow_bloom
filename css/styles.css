@@ -919,17 +919,43 @@ body.dark-mode .checkin-card {
     border: 1px solid var(--border-color);
 }
 
+/* 修复设置页面复选框对齐问题 */
 .checkbox-label {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: var(--spacing-sm);
     cursor: pointer;
+    margin-bottom: var(--spacing-sm);
 }
 
+.checkbox-label input[type="checkbox"] {
+    margin: 0;
+    flex-shrink: 0; /* 防止复选框被压缩 */
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+
+.checkbox-label span {
+    line-height: 1.2;
+    vertical-align: middle;
+    margin: 0;
+}
+
+/* 确保表单组内的标签对齐 */
+.form-group .checkbox-label {
+    align-items: flex-start; /* 顶部对齐，适合多行文本 */
+    padding: var(--spacing-xs) 0;
+}
+
+/* 设置描述文字样式 */
 .setting-desc {
-    font-size: 12px;
-    color: var(--text-secondary);
     margin-top: var(--spacing-xs);
+    margin-left: calc(16px + var(--spacing-sm)); /* 与复选框文字对齐 */
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.3;
 }
 
 .warning-btn {
@@ -1143,7 +1169,7 @@ button.secondary-btn:disabled {
 /* 头部图标按钮 */
 .redbook-header .icon-btn {
     background: rgba(255, 255, 255, 0.2);
-    color: white;
+    color: rgb(255, 208, 199);
     border: 2px solid rgba(255, 255, 255, 0.3);
     width: 44px;
     height: 44px;
@@ -1186,26 +1212,76 @@ button.secondary-btn:disabled {
     font-size: 1.1em;
 }
 
-/* 红账条目列表 */
+
+/* 红账本条目样式优化 */
+.redbook-entry-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    max-height: 35px;
+    width: 100%;
+    position: relative;
+    margin-left: auto;
+    margin-right: auto;
+    
+    /* 字体设置 */
+    font-family: "Helvetica Neue", "Arial", "苹方", "Microsoft YaHei", sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .redbook-entry-item {
+        max-width: 100%;
+        margin: 0 0 var(--spacing-sm) 0;
+    }
+}
+
+/* 今日红账区域居中 */
 .redbook-entries-list {
     display: flex;
     flex-direction: column;
+    align-items: center; /* 居中对齐条目 */
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
 }
 
-/* 红账条目项 */
-.redbook-entry-item {
-    background: var(--redbook-light);
-    border: 2px solid var(--redbook-secondary);
-    border-radius: var(--border-radius-md);
-    padding: var(--spacing-md);
-    cursor: pointer;
-    transition: all var(--transition-speed);
-    position: relative;
+/* 修复：将样式应用到正确的类 */
+.redbook-entry-preview {
+    font-size: 14px;
+    color: var(--text-primary);
+    line-height: 1.4;
+    
+    /* 限制为单行显示 */
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
+    
+    /* 设置最大宽度 */
+    max-width: 100%;
+    display: block;
 }
 
+.redbook-entry-time {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    text-align: right;
+}
+
+.redbook-entry-item:hover {
+    background: var(--hover-color);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* 左侧装饰条 */
 .redbook-entry-item::before {
     content: "";
     position: absolute;
@@ -1216,27 +1292,6 @@ button.secondary-btn:disabled {
     background: linear-gradient(to bottom, var(--redbook-primary), var(--redbook-accent));
 }
 
-.redbook-entry-item:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--redbook-shadow);
-    border-color: var(--redbook-accent);
-}
-
-/* 红账预览内容 */
-.redbook-entry-preview {
-    color: var(--redbook-text);
-    line-height: 1.6;
-    margin-bottom: var(--spacing-sm);
-    font-size: 0.95rem;
-}
-
-/* 红账时间 */
-.redbook-entry-time {
-    color: var(--redbook-text-light);
-    font-size: 0.8rem;
-    text-align: right;
-    font-weight: 500;
-}
 
 /* 空状态 */
 .redbook-empty-state {
@@ -1285,7 +1340,7 @@ button.secondary-btn:disabled {
 }
 
 .redbook-detail-content::before {
-    content: """;
+    content: '"';
     position: absolute;
     top: -10px;
     left: 10px;
@@ -1329,11 +1384,11 @@ button.secondary-btn:disabled {
     border-bottom: 2px solid var(--redbook-secondary);
 }
 
-.redbook-date-entries {
-    padding: var(--spacing-md);
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
+/* 历史页面条目也居中 */
+.redbook-date-entries .redbook-entry-item {
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* 红账本模态框样式 */
@@ -1440,3 +1495,4 @@ button.secondary-btn:disabled {
     background: linear-gradient(135deg, var(--redbook-light) 0%, var(--redbook-warm) 100%);
     border-top: 3px solid var(--redbook-primary);
 }
+
