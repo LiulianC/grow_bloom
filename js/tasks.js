@@ -490,36 +490,6 @@ const TasksModule = (() => {
     };
     
 
-    const addCategoryCardStyles = () => {
-        const styleEl = document.createElement('style');
-        styleEl.textContent = `
-            .category-card {
-                position: relative;
-                padding-right: 30px;
-            }
-            
-            .delete-category-btn {
-                position: absolute;
-                right: 8px;
-                top: 50%;
-                transform: translateY(-50%);
-                background: none;
-                border: none;
-                color: var(--danger-color);
-                opacity: 0.7;
-                cursor: pointer;
-                padding: 4px;
-                border-radius: 50%;
-            }
-            
-            .delete-category-btn:hover {
-                opacity: 1;
-                background-color: rgba(239, 108, 117, 0.1);
-            }
-        `;
-        document.head.appendChild(styleEl);
-    };    
-
     const addCategoryTab = (category) => {
         console.log(`创建类别标签: ${category}`);
         
@@ -1265,39 +1235,6 @@ const TasksModule = (() => {
         console.log('类别诊断和修复完成');
     };
 
-    // 添加此函数来移除冗余打卡项
-    const removeRedundantCheckInItems = () => {
-        // 获取身体健康标签内容区域
-        const healthTabContent = document.querySelector('.tab-content[data-category="身体健康"]');
-        
-        if (healthTabContent) {
-            // 移除起床打卡卡片
-            const wakeupCard = healthTabContent.querySelector('#wakeup-card');
-            if (wakeupCard) {
-                wakeupCard.remove();
-            }
-            
-            // 移除睡眠打卡卡片
-            const sleepCard = healthTabContent.querySelector('#sleep-card');
-            if (sleepCard) {
-                sleepCard.remove();
-            }
-            
-            // 移除早起打卡卡片
-            const earlyWakeSection = healthTabContent.querySelector('.early-wake-section');
-            if (earlyWakeSection) {
-                earlyWakeSection.remove();
-            }
-            
-            // 移除早睡打卡卡片
-            const earlySleepSection = healthTabContent.querySelector('.early-sleep-section');
-            if (earlySleepSection) {
-                earlySleepSection.remove();
-            }
-            
-            console.log('已移除任务页面中的冗余打卡项');
-        }
-    };
 
     // 公开API
     return {
