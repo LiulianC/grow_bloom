@@ -369,12 +369,6 @@ function bindSettingsButtonEvents() {
         exportAllDataBtn.addEventListener('click', exportAllDataFunction);
     }
     
-    // 绑定清除所有数据按钮
-    const clearDataBtn = document.getElementById('clear-data');
-    if (clearDataBtn) {
-        clearDataBtn.removeEventListener('click', confirmClearAllData);
-        clearDataBtn.addEventListener('click', confirmClearAllData);
-    }
     
     // 绑定保存设置按钮
     const saveSettingsBtn = document.getElementById('save-settings');
@@ -593,91 +587,7 @@ function exportAllDataFunction() {
     }
 }
 
-// 确认清除所有数据功能
-function confirmClearAllData() {
-    console.log('显示清除数据确认对话框');
-    
-    // 创建确认对话框
-    const confirmDialog = document.createElement('div');
-    confirmDialog.className = 'modal';
-    confirmDialog.style.zIndex = '1002'; // 确保在设置模态框之上
-    confirmDialog.innerHTML = `
-        <div class="modal-header">
-            <h3>确认清除数据</h3>
-            <button class="close-confirm-clear">×</button>
-        </div>
-        <div class="modal-body">
-            <p>此操作将永久删除所有应用数据，包括任务记录、统计数据和设置。</p>
-            <p style="color: var(--danger-color); font-weight: bold;">此操作无法撤销，请确认是否继续？</p>
-            <div class="form-actions">
-                <button id="final-confirm-clear-data" class="danger-btn">确认清除</button>
-                <button id="cancel-clear-data" class="secondary-btn">取消</button>
-            </div>
-        </div>
-    `;
-    
-    // 添加到模态框遮罩层
-    const modalOverlay = document.getElementById('modal-overlay');
-    modalOverlay.appendChild(confirmDialog);
-    
-    // 绑定关闭按钮事件
-    confirmDialog.querySelector('.close-confirm-clear').addEventListener('click', () => {
-        modalOverlay.removeChild(confirmDialog);
-    });
-    
-    // 绑定取消按钮事件
-    document.getElementById('cancel-clear-data').addEventListener('click', () => {
-        modalOverlay.removeChild(confirmDialog);
-    });
-    
-    // 绑定确认按钮事件
-    document.getElementById('final-confirm-clear-data').addEventListener('click', () => {
-        try {
-            console.log('执行清除所有数据操作');
-            
-            // 清除所有相关的localStorage条目
-            const keysToRemove = [];
-            for(let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith('bloom_')) {
-                    keysToRemove.push(key);
-                }
-            }
-            
-            keysToRemove.forEach(key => {
-                localStorage.removeItem(key);
-            });
-            
-            // 关闭确认对话框
-            modalOverlay.removeChild(confirmDialog);
-            
-            // 关闭设置模态框
-            document.getElementById('settings-modal').classList.add('hidden');
-            modalOverlay.classList.add('hidden');
-            
-            // 显示通知
-            if (typeof NotificationsModule !== 'undefined') {
-                NotificationsModule.showNotification('数据已清除', '应用数据已成功清除，即将刷新页面');
-            } else {
-                alert('数据已清除，即将刷新页面');
-            }
-            
-            // 延迟刷新页面
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-            
-        } catch (error) {
-            console.error('清除数据失败:', error);
-            
-            if (typeof NotificationsModule !== 'undefined') {
-                NotificationsModule.showNotification('清除失败', `清除数据时出错: ${error.message}`);
-            } else {
-                alert(`清除失败：${error.message}`);
-            }
-        }
-    });
-}
+
 
 // 保存所有设置功能
 function saveAllSettings() {
