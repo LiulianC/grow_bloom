@@ -176,11 +176,8 @@ const TasksModule = (() => {
                     // 添加到任务模板
                     StorageService.addTaskTemplate(category, taskName);
                     
-                    // 确保类别标签存在
-                    if (!document.querySelector(`.tab-btn[data-category="${category}"]`)) {
-                        console.log(`为 ${category} 创建新标签`);
-                        addCategoryTab(category);
-                    }
+                    // 确保类别存在
+                    ensureCategoryExists(category);
                     
                     // 添加到UI
                     addTaskToUI(task, false);
@@ -192,15 +189,16 @@ const TasksModule = (() => {
                     // 重置表单
                     newForm.reset();
                     
-                    // 切换到对应标签
-                    switchTab(category);
-                    
-                    // 确保事件绑定正常
-                    bindTabSwitchingEvents();
+                    // 延迟切换到对应标签，确保DOM更新完成
+                    setTimeout(() => {
+                        switchTab(category);
+                        // 确保事件绑定正常
+                        bindTabSwitchingEvents();
+                    }, 200);
                     
                     // 显示成功通知
                     if (typeof NotificationsModule !== 'undefined') {
-                        NotificationsModule.showNotification('任务添加成功', `已添加任务："${taskName}"`);
+                        NotificationsModule.showNotification('任务添加成功', `已添加任务："${taskName}" 到 ${category} 类别`);
                     }
                     
                     console.log(`任务创建完成: "${taskName}" (${category})`);
@@ -397,7 +395,7 @@ const TasksModule = (() => {
     
     // 修改切换标签函数，确保事件不丢失
     const switchTab = (category) => {
-        console.log(`切换到标签: ${category}`);
+        console.log(`尝试切换到标签: ${category}`);
         
         // 获取所有标签按钮和内容
         const allTabBtns = document.querySelectorAll('.tab-btn');
@@ -417,12 +415,26 @@ const TasksModule = (() => {
         console.log(`目标标签内容:`, targetTabContent);
         
         if (!targetTabBtn) {
-            console.error(`找不到类别为 ${category} 的标签按钮`);
+            console.error(`找不到类别为 ${category} 的标签按钮，尝试创建...`);
+            ensureCategoryExists(category);
+            
+            // 重新尝试获取
+            const retryTabBtn = document.querySelector(`.tab-btn[data-category="${category}"]`);
+            if (retryTabBtn) {
+                retryTabBtn.classList.add('active');
+            }
             return;
         }
         
         if (!targetTabContent) {
-            console.error(`找不到类别为 ${category} 的标签内容`);
+            console.error(`找不到类别为 ${category} 的标签内容，尝试创建...`);
+            ensureCategoryExists(category);
+            
+            // 重新尝试获取
+            const retryTabContent = document.querySelector(`.tab-content[data-category="${category}"]`);
+            if (retryTabContent) {
+                retryTabContent.classList.add('active');
+            }
             return;
         }
         
@@ -431,6 +443,15 @@ const TasksModule = (() => {
         targetTabContent.classList.add('active');
         
         console.log(`标签切换成功: ${category}`);
+        
+        // 验证任务容器
+        const tasksContainer = document.getElementById(`tasks-${category}`);
+        if (tasksContainer) {
+            const taskCount = tasksContainer.children.length;
+            console.log(`${category} 类别当前有 ${taskCount} 个任务`);
+        } else {
+            console.warn(`${category} 类别缺少任务容器`);
+        }
     };
 
     // 重写确认删除类别函数，确保工作正常
@@ -624,7 +645,7 @@ const TasksModule = (() => {
 
     // 动态添加类别标签
     const addCategoryTab = (category) => {
-        console.log(`尝试添加类别标签: ${category}`);
+        console.log(`创建类别标签: ${category}`);
         
         // 检查标签是否已存在
         if (document.querySelector(`.tab-btn[data-category="${category}"]`)) {
@@ -640,17 +661,16 @@ const TasksModule = (() => {
             return;
         }
         
-        // 创建新标签按钮
+        // 1. 创建新标签按钮
         const newTabBtn = document.createElement('button');
         newTabBtn.className = 'tab-btn';
         newTabBtn.dataset.category = category;
         newTabBtn.textContent = category;
-        newTabBtn.addEventListener('click', () => switchTab(category));
         
         // 在自定义标签按钮前插入
         tabsContainer.insertBefore(newTabBtn, customTabBtn);
         
-        // 创建对应的内容区域
+        // 2. 创建对应的内容区域
         const tabContentsParent = document.querySelector('.card-body');
         
         if (!tabContentsParent) {
@@ -662,7 +682,7 @@ const TasksModule = (() => {
         newTabContent.className = 'tab-content';
         newTabContent.dataset.category = category;
         
-        // 创建任务列表容器
+        // 3. 创建任务列表容器
         const tasksList = document.createElement('div');
         tasksList.className = 'tasks-list';
         tasksList.id = `tasks-${category}`;
@@ -670,7 +690,10 @@ const TasksModule = (() => {
         
         tabContentsParent.appendChild(newTabContent);
         
-        console.log(`类别标签添加成功: ${category}`);
+        console.log(`类别标签创建成功: ${category}`);
+        
+        // 4. 重新绑定所有标签事件
+        bindTabSwitchingEvents();
     };
     
 
@@ -1068,69 +1091,82 @@ const TasksModule = (() => {
         });
     };
     
+    // 确保类别完整性检查函数
+    const ensureCategoryExists = (category) => {
+        console.log(`检查类别完整性: ${category}`);
+        
+        // 跳过默认类别
+        if (DEFAULT_CATEGORIES.includes(category)) {
+            return;
+        }
+        
+        // 检查标签按钮
+        let tabBtn = document.querySelector(`.tab-btn[data-category="${category}"]`);
+        if (!tabBtn) {
+            console.log(`类别 ${category} 缺少标签按钮，创建中...`);
+            addCategoryTab(category);
+            tabBtn = document.querySelector(`.tab-btn[data-category="${category}"]`);
+        }
+        
+        // 检查标签内容
+        let tabContent = document.querySelector(`.tab-content[data-category="${category}"]`);
+        if (!tabContent) {
+            console.log(`类别 ${category} 缺少标签内容，创建中...`);
+            addCategoryTab(category);
+            tabContent = document.querySelector(`.tab-content[data-category="${category}"]`);
+        }
+        
+        // 检查任务列表容器
+        let tasksContainer = document.getElementById(`tasks-${category}`);
+        if (!tasksContainer) {
+            console.log(`类别 ${category} 缺少任务容器，创建中...`);
+            
+            if (tabContent) {
+                tasksContainer = document.createElement('div');
+                tasksContainer.className = 'tasks-list';
+                tasksContainer.id = `tasks-${category}`;
+                tabContent.appendChild(tasksContainer);
+            }
+        }
+        
+        // 重新绑定标签切换事件
+        bindTabSwitchingEvents();
+        
+        console.log(`类别 ${category} 完整性检查完成`);
+    };
+
     // 添加任务到UI
     const addTaskToUI = (task, isCompleted) => {
-        // 查找或创建任务容器
+        console.log(`开始添加任务到UI: "${task.name}" (${task.category})`);
+        
+        // 1. 确保类别完整存在
+        ensureCategoryExists(task.category);
+        
+        // 2. 查找任务容器，特别处理自定义类别
         let tasksContainer = document.getElementById(`tasks-${task.category}`);
         
-        // 特别处理"身体健康"类别
-        if (task.category === '身体健康') {
-            // 查找身体健康的标签内容
-            const healthTabContent = document.querySelector('.tab-content[data-category="身体健康"]');
-            
-            if (healthTabContent) {
-                // 查找现有的任务列表容器
-                tasksContainer = healthTabContent.querySelector('.tasks-list');
-                
-                // 如果没有任务列表容器，创建一个
-                if (!tasksContainer) {
-                    console.log('为身体健康类别创建任务列表容器');
-                    tasksContainer = document.createElement('div');
-                    tasksContainer.className = 'tasks-list';
-                    tasksContainer.id = 'tasks-身体健康';
-                    
-                    // 将任务列表添加到标签内容的最后
-                    healthTabContent.appendChild(tasksContainer);
-                }
-            }
-        }
-        
-        // 如果容器仍然不存在，先添加标签和容器
         if (!tasksContainer) {
-            console.log(`为 ${task.category} 创建新的任务容器`);
+            console.error(`找不到类别 ${task.category} 的任务容器，强制创建...`);
             
-            // 检查是否需要添加类别标签
-            if (!document.querySelector(`.tab-btn[data-category="${task.category}"]`)) {
+            // 如果是自定义类别，确保标签和容器都存在
+            if (!DEFAULT_CATEGORIES.includes(task.category)) {
                 addCategoryTab(task.category);
+                tasksContainer = document.getElementById(`tasks-${task.category}`);
             }
             
-            // 再次尝试获取容器
-            tasksContainer = document.getElementById(`tasks-${task.category}`);
-            
-            // 如果仍然不存在，则创建
             if (!tasksContainer) {
-                console.log(`手动创建 ${task.category} 的任务容器`);
-                const tabContent = document.querySelector(`.tab-content[data-category="${task.category}"]`);
-                
-                if (tabContent) {
-                    tasksContainer = document.createElement('div');
-                    tasksContainer.className = 'tasks-list';
-                    tasksContainer.id = `tasks-${task.category}`;
-                    tabContent.appendChild(tasksContainer);
-                } else {
-                    console.error(`无法找到 ${task.category} 的标签内容`);
-                    return;
-                }
+                console.error(`无法创建 ${task.category} 的任务容器`);
+                return;
             }
         }
         
-        // 检查任务是否已存在（避免重复添加）
+        // 3. 检查任务是否已存在（避免重复添加）
         if (document.querySelector(`.task-item[data-id="${task.id}"]`)) {
             console.log(`任务 ${task.id} 已存在，跳过添加`);
             return;
         }
         
-        // 创建任务元素
+        // 4. 创建任务元素
         const taskElement = document.createElement('div');
         taskElement.className = `task-item ${isCompleted ? 'completed' : ''}`;
         taskElement.dataset.id = task.id;
@@ -1142,7 +1178,7 @@ const TasksModule = (() => {
             </div>
         `;
         
-        // 如果任务未完成，添加点击事件
+        // 5. 如果任务未完成，添加点击事件
         if (!isCompleted) {
             const checkBtn = taskElement.querySelector('.task-check');
             checkBtn.addEventListener('click', function() {
@@ -1150,10 +1186,18 @@ const TasksModule = (() => {
             });
         }
         
+        // 6. 添加到容器
         tasksContainer.appendChild(taskElement);
-        console.log(`已添加任务 "${task.name}" 到 ${task.category} 类别`);
+        console.log(`成功添加任务 "${task.name}" 到 ${task.category} 类别`);
         
-        // 更新总览
+        // 7. 自动切换到该类别标签（新任务创建时）
+        if (!isCompleted) {
+            setTimeout(() => {
+                switchTab(task.category);
+            }, 100);
+        }
+        
+        // 8. 更新总览
         if (typeof updateDailyOverview === 'function') {
             updateDailyOverview();
         }
