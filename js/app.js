@@ -268,148 +268,26 @@ function ensureAllFunctionsWork() {
 
 
 
-// 添加计算数据大小的函数（在app.js中）
-function calculateDataSizeForSettings() {
-    try {
-        let totalSize = 0;
-        
-        // 计算localStorage中所有与应用相关的数据大小
-        for(let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith('bloom_')) {
-                const value = localStorage.getItem(key) || '';
-                totalSize += key.length + value.length;
-            }
-        }
-        
-        // 转换为合适的单位
-        let sizeDisplay;
-        if (totalSize < 1024) {
-            sizeDisplay = `${totalSize} 字节`;
-        } else if (totalSize < 1024 * 1024) {
-            sizeDisplay = `${(totalSize / 1024).toFixed(2)} KB`;
-        } else {
-            sizeDisplay = `${(totalSize / (1024 * 1024)).toFixed(2)} MB`;
-        }
-        
-        const dataSizeElement = document.getElementById('data-size');
-        if (dataSizeElement) {
-            dataSizeElement.textContent = sizeDisplay;
-        }
-        
-        console.log('数据大小计算完成:', sizeDisplay);
-    } catch (error) {
-        console.error('计算数据大小失败:', error);
-        
-        const dataSizeElement = document.getElementById('data-size');
-        if (dataSizeElement) {
-            dataSizeElement.textContent = '计算失败';
-        }
-    }
-}
 
-// 添加加载当前设置的函数（在app.js中）
-function loadCurrentSettingsForApp() {
-    try {
-        console.log('加载当前设置并绑定按钮事件...');
-        
-        // 获取设置元素
-        const earlyWakeStartTime = document.getElementById('early-wake-start-time');
-        const earlyWakeEndTime = document.getElementById('early-wake-end-time');
-        const earlySleepStartTime = document.getElementById('early-sleep-start-time');
-        const earlySleepEndTime = document.getElementById('early-sleep-end-time');
-        const devModeToggle = document.getElementById('dev-mode-toggle');
-        
-        // 加载设置数据（保持不变）
-        if (typeof StorageService !== 'undefined') {
-            const settings = StorageService.getSettings();
-            const todayData = StorageService.getTodayData();
-            
-            // 设置时间值
-            if (todayData.earlyWakeSettings) {
-                if (earlyWakeStartTime) earlyWakeStartTime.value = todayData.earlyWakeSettings.startTime || "05:00";
-                if (earlyWakeEndTime) earlyWakeEndTime.value = todayData.earlyWakeSettings.endTime || "06:00";
-            } else {
-                if (earlyWakeStartTime) earlyWakeStartTime.value = "05:00";
-                if (earlyWakeEndTime) earlyWakeEndTime.value = "06:00";
-            }
-            
-            if (todayData.earlySleepSettings) {
-                if (earlySleepStartTime) earlySleepStartTime.value = todayData.earlySleepSettings.startTime || "22:00";
-                if (earlySleepEndTime) earlySleepEndTime.value = todayData.earlySleepSettings.endTime || "23:00";
-            } else {
-                if (earlySleepStartTime) earlySleepStartTime.value = "22:00";
-                if (earlySleepEndTime) earlySleepEndTime.value = "23:00";
-            }
-            
-            if (devModeToggle) {
-                devModeToggle.checked = settings.devMode || false;
-                toggleDevModeForApp(settings.devMode || false);
-            }
-        }
-        
-        // 重新绑定所有设置按钮的事件（关键修复）
-        bindSettingsButtonEvents();
-        
-    } catch (error) {
-        console.error('加载设置失败:', error);
-    }
-}
+
+
 
 // 新增：专门绑定设置按钮事件的函数
 function bindSettingsButtonEvents() {
     console.log('绑定设置按钮事件...');
     
-    // 绑定导出所有数据按钮
-    const exportAllDataBtn = document.getElementById('export-all-data');
-    if (exportAllDataBtn) {
-        // 先移除旧的事件监听器
-        exportAllDataBtn.removeEventListener('click', exportAllDataFunction);
-        // 绑定新的事件监听器
-        exportAllDataBtn.addEventListener('click', exportAllDataFunction);
-    }
+
     
-    // 绑定清除所有数据按钮
-    const clearDataBtn = document.getElementById('clear-data');
-    if (clearDataBtn) {
-        clearDataBtn.removeEventListener('click', confirmClearAllData);
-        clearDataBtn.addEventListener('click', confirmClearAllData);
-    }
+
     
-    // 绑定保存设置按钮
-    const saveSettingsBtn = document.getElementById('save-settings');
-    if (saveSettingsBtn) {
-        saveSettingsBtn.removeEventListener('click', saveAllSettings);
-        saveSettingsBtn.addEventListener('click', saveAllSettings);
-    }
+
     
-    // 绑定开发者模式切换
-    const devModeToggle = document.getElementById('dev-mode-toggle');
-    if (devModeToggle) {
-        devModeToggle.removeEventListener('change', handleDevModeToggle);
-        devModeToggle.addEventListener('change', handleDevModeToggle);
-    }
-    
-    // 绑定开发者选项按钮
-    const addTestDataBtn = document.getElementById('add-test-data');
-    if (addTestDataBtn) {
-        addTestDataBtn.removeEventListener('click', addTestDataFunction);
-        addTestDataBtn.addEventListener('click', addTestDataFunction);
-    }
-    
-    const resetTodayBtn = document.getElementById('reset-today');
-    if (resetTodayBtn) {
-        resetTodayBtn.removeEventListener('click', resetTodayDataFunction);
-        resetTodayBtn.addEventListener('click', resetTodayDataFunction);
-    }
+
     
     console.log('设置按钮事件绑定完成');
 }
 
-// 新增：开发者模式切换处理函数
-function handleDevModeToggle(e) {
-    toggleDevModeForApp(e.target.checked);
-}
+
 
 // 添加开发者模式切换函数（在app.js中）
 function toggleDevModeForApp(enabled) {
@@ -483,47 +361,23 @@ function fixSettingsButton() {
         const newSettingsBtn = settingsBtn.cloneNode(true);
         settingsBtn.parentNode.replaceChild(newSettingsBtn, settingsBtn);
         
-        // 重新绑定事件
+        // 重新绑定事件 - 委托给SettingsModule
         newSettingsBtn.addEventListener('click', function() {
             console.log('设置按钮被点击');
             
             try {
-                // 检查必要的DOM元素
-                const modalOverlay = document.getElementById('modal-overlay');
-                const settingsModal = document.getElementById('settings-modal');
-                
-                if (!modalOverlay || !settingsModal) {
-                    throw new Error('找不到必要的模态框元素');
+                // 使用SettingsModule打开设置
+                if (typeof SettingsModule !== 'undefined' && SettingsModule.openSettingsModal) {
+                    SettingsModule.openSettingsModal();
+                } else {
+                    console.error('SettingsModule未定义或方法不存在');
+                    if (typeof NotificationsModule !== 'undefined') {
+                        NotificationsModule.showNotification('设置打开失败', '请刷新页面后重试');
+                    }
                 }
-                
-                // 确保所有其他模态框都隐藏
-                document.querySelectorAll('.modal').forEach(modal => {
-                    modal.classList.add('hidden');
-                });
-                
-                // 显示模态框遮罩
-                modalOverlay.classList.remove('hidden');
-                
-                // 显示设置模态框
-                settingsModal.classList.remove('hidden');
-                
-                // 计算数据大小
-                calculateDataSizeForSettings();
-                
-                // 加载当前设置
-                loadCurrentSettingsForApp();
-                
-                // 修复关闭按钮（重要！）
-                fixModalCloseButtons();
                 
             } catch (error) {
                 console.error('打开设置失败:', error);
-                
-                // 确保隐藏遮罩层，避免卡住
-                const modalOverlay = document.getElementById('modal-overlay');
-                if (modalOverlay) {
-                    modalOverlay.classList.add('hidden');
-                }
                 
                 if (typeof NotificationsModule !== 'undefined') {
                     NotificationsModule.showNotification('设置打开失败', '请刷新页面后重试: ' + error.message);
@@ -535,374 +389,15 @@ function fixSettingsButton() {
 
 
 
-// 导出所有数据功能
-function exportAllDataFunction() {
-    try {
-        console.log('开始导出所有数据...');
-        
-        // 获取所有数据
-        const allData = {
-            dailyData: JSON.parse(localStorage.getItem('bloom_daily_data')) || [],
-            tasks: JSON.parse(localStorage.getItem('bloom_tasks')) || {},
-            customCategories: JSON.parse(localStorage.getItem('bloom_custom_categories')) || [],
-            settings: JSON.parse(localStorage.getItem('bloom_settings')) || {}
-        };
-        
-        // 转换为JSON
-        const jsonData = JSON.stringify(allData, null, 2);
-        
-        // 创建Blob
-        const blob = new Blob([jsonData], {type: 'application/json'});
-        
-        // 创建下载链接
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        
-        // 设置下载属性
-        const now = new Date();
-        const dateString = now.toISOString().split('T')[0];
-        const fileName = `bloom_diary_full_export_${dateString}.json`;
-        link.setAttribute('href', url);
-        link.setAttribute('download', fileName);
-        
-        // 添加到文档并模拟点击
-        document.body.appendChild(link);
-        link.click();
-        
-        // 清理
-        setTimeout(() => {
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }, 100);
-        
-        // 显示成功通知
-        if (typeof NotificationsModule !== 'undefined') {
-            NotificationsModule.showNotification('导出成功', `所有数据已成功导出为 ${fileName}`);
-        } else {
-            alert(`导出成功！文件名：${fileName}`);
-        }
-        
-    } catch (error) {
-        console.error('导出所有数据失败:', error);
-        
-        if (typeof NotificationsModule !== 'undefined') {
-            NotificationsModule.showNotification('导出失败', `导出数据时出错: ${error.message}`);
-        } else {
-            alert(`导出失败：${error.message}`);
-        }
-    }
-}
 
-// 确认清除所有数据功能
-function confirmClearAllData() {
-    console.log('显示清除数据确认对话框');
-    
-    // 创建确认对话框
-    const confirmDialog = document.createElement('div');
-    confirmDialog.className = 'modal';
-    confirmDialog.style.zIndex = '1002'; // 确保在设置模态框之上
-    confirmDialog.innerHTML = `
-        <div class="modal-header">
-            <h3>确认清除数据</h3>
-            <button class="close-confirm-clear">×</button>
-        </div>
-        <div class="modal-body">
-            <p>此操作将永久删除所有应用数据，包括任务记录、统计数据和设置。</p>
-            <p style="color: var(--danger-color); font-weight: bold;">此操作无法撤销，请确认是否继续？</p>
-            <div class="form-actions">
-                <button id="final-confirm-clear-data" class="danger-btn">确认清除</button>
-                <button id="cancel-clear-data" class="secondary-btn">取消</button>
-            </div>
-        </div>
-    `;
-    
-    // 添加到模态框遮罩层
-    const modalOverlay = document.getElementById('modal-overlay');
-    modalOverlay.appendChild(confirmDialog);
-    
-    // 绑定关闭按钮事件
-    confirmDialog.querySelector('.close-confirm-clear').addEventListener('click', () => {
-        modalOverlay.removeChild(confirmDialog);
-    });
-    
-    // 绑定取消按钮事件
-    document.getElementById('cancel-clear-data').addEventListener('click', () => {
-        modalOverlay.removeChild(confirmDialog);
-    });
-    
-    // 绑定确认按钮事件
-    document.getElementById('final-confirm-clear-data').addEventListener('click', () => {
-        try {
-            console.log('执行清除所有数据操作');
-            
-            // 清除所有相关的localStorage条目
-            const keysToRemove = [];
-            for(let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith('bloom_')) {
-                    keysToRemove.push(key);
-                }
-            }
-            
-            keysToRemove.forEach(key => {
-                localStorage.removeItem(key);
-            });
-            
-            // 关闭确认对话框
-            modalOverlay.removeChild(confirmDialog);
-            
-            // 关闭设置模态框
-            document.getElementById('settings-modal').classList.add('hidden');
-            modalOverlay.classList.add('hidden');
-            
-            // 显示通知
-            if (typeof NotificationsModule !== 'undefined') {
-                NotificationsModule.showNotification('数据已清除', '应用数据已成功清除，即将刷新页面');
-            } else {
-                alert('数据已清除，即将刷新页面');
-            }
-            
-            // 延迟刷新页面
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-            
-        } catch (error) {
-            console.error('清除数据失败:', error);
-            
-            if (typeof NotificationsModule !== 'undefined') {
-                NotificationsModule.showNotification('清除失败', `清除数据时出错: ${error.message}`);
-            } else {
-                alert(`清除失败：${error.message}`);
-            }
-        }
-    });
-}
 
-// 保存所有设置功能
-function saveAllSettings() {
-    try {
-        console.log('开始保存设置...');
-        
-        // 获取设置表单值
-        const earlyWakeStartTime = document.getElementById('early-wake-start-time').value;
-        const earlyWakeEndTime = document.getElementById('early-wake-end-time').value;
-        const earlySleepStartTime = document.getElementById('early-sleep-start-time').value;
-        const earlySleepEndTime = document.getElementById('early-sleep-end-time').value;
-        const devMode = document.getElementById('dev-mode-toggle').checked;
-        
-        // 验证时间设置
-        if (!earlyWakeStartTime || !earlyWakeEndTime || earlyWakeStartTime >= earlyWakeEndTime) {
-            throw new Error('请设置有效的早起打卡时间范围');
-        }
-        
-        if (!earlySleepStartTime || !earlySleepEndTime || earlySleepStartTime >= earlySleepEndTime) {
-            throw new Error('请设置有效的早睡打卡时间范围');
-        }
-        
-        // 获取今日数据
-        const todayString = new Date().toISOString().split('T')[0];
-        const allData = JSON.parse(localStorage.getItem('bloom_daily_data')) || [];
-        
-        // 更新今日数据中的打卡设置
-        let todayDataIndex = allData.findIndex(data => data.date === todayString);
-        if (todayDataIndex === -1) {
-            // 如果今日数据不存在，创建新的
-            allData.push({
-                date: todayString,
-                earlyWakeSettings: {
-                    startTime: earlyWakeStartTime,
-                    endTime: earlyWakeEndTime
-                },
-                earlySleepSettings: {
-                    startTime: earlySleepStartTime,
-                    endTime: earlySleepEndTime
-                },
-                completedTasks: [],
-                studySessions: [],
-                totalEarnings: {
-                    bodyHealth: 0,
-                    mentalHealth: 0,
-                    soulNourishment: 0,
-                    selfImprovement: 0,
-                    socialBonds: 0,
-                    total: 0
-                }
-            });
-        } else {
-            // 更新现有数据
-            allData[todayDataIndex].earlyWakeSettings = {
-                startTime: earlyWakeStartTime,
-                endTime: earlyWakeEndTime
-            };
-            allData[todayDataIndex].earlySleepSettings = {
-                startTime: earlySleepStartTime,
-                endTime: earlySleepEndTime
-            };
-        }
-        
-        // 保存今日数据
-        localStorage.setItem('bloom_daily_data', JSON.stringify(allData));
-        
-        // 更新全局设置
-        const settings = JSON.parse(localStorage.getItem('bloom_settings')) || {};
-        settings.devMode = devMode;
-        localStorage.setItem('bloom_settings', JSON.stringify(settings));
-        
-        // 关闭设置模态框
-        document.getElementById('modal-overlay').classList.add('hidden');
-        document.getElementById('settings-modal').classList.add('hidden');
-        
-        // 显示成功通知
-        if (typeof NotificationsModule !== 'undefined') {
-            NotificationsModule.showNotification('设置已保存', '应用设置已成功更新');
-        } else {
-            alert('设置已保存！');
-        }
-        
-        console.log('设置保存完成');
-        
-    } catch (error) {
-        console.error('保存设置失败:', error);
-        
-        if (typeof NotificationsModule !== 'undefined') {
-            NotificationsModule.showNotification('保存失败', error.message);
-        } else {
-            alert(`保存失败：${error.message}`);
-        }
-    }
-}
 
-// 添加测试数据功能
-function addTestDataFunction() {
-    try {
-        console.log('开始添加测试数据...');
-        
-        // 生成测试数据
-        const now = new Date();
-        const allData = JSON.parse(localStorage.getItem('bloom_daily_data')) || [];
-        
-        // 生成过去7天的测试数据
-        for (let i = 1; i <= 7; i++) {
-            const testDate = new Date(now);
-            testDate.setDate(now.getDate() - i);
-            
-            const testDateString = `${testDate.getFullYear()}-${String(testDate.getMonth() + 1).padStart(2, '0')}-${String(testDate.getDate()).padStart(2, '0')}`;
-            
-            // 检查该日期是否已有数据
-            if (!allData.some(data => data.date === testDateString)) {
-                // 生成随机数据
-                const studyMinutes = Math.floor(Math.random() * 180) + 30; // 30-210分钟
-                const bodyHealthEarnings = Math.floor(Math.random() * 10) + 2; // 2-12元
-                const mentalHealthEarnings = Math.floor(Math.random() * 8) + 2; // 2-10元
-                const selfImprovementEarnings = (studyMinutes / 60) * 10; // 学习收入
-                
-                const testData = {
-                    date: testDateString,
-                    wakeupTime: new Date(testDate).toISOString(),
-                    studySessions: [
-                        {
-                            id: `test-${Date.now()}-${i}`,
-                            startTime: new Date(testDate).toISOString(),
-                            endTime: new Date(testDate).toISOString(),
-                            duration: studyMinutes,
-                            completed: true,
-                            earnings: selfImprovementEarnings
-                        }
-                    ],
-                    completedTasks: [
-                        {
-                            id: `test-task-1-${i}`,
-                            category: '身体健康',
-                            name: '散步30分钟',
-                            completed: true,
-                            date: new Date(testDate).toISOString(),
-                            earnings: 2
-                        },
-                        {
-                            id: `test-task-2-${i}`,
-                            category: '心理健康',
-                            name: '冥想10分钟',
-                            completed: true,
-                            date: new Date(testDate).toISOString(),
-                            earnings: 2
-                        }
-                    ],
-                    totalEarnings: {
-                        bodyHealth: bodyHealthEarnings,
-                        mentalHealth: mentalHealthEarnings,
-                        soulNourishment: 0,
-                        selfImprovement: selfImprovementEarnings,
-                        socialBonds: 0,
-                        total: bodyHealthEarnings + mentalHealthEarnings + selfImprovementEarnings
-                    }
-                };
-                
-                allData.push(testData);
-            }
-        }
-        
-        // 保存更新后的数据
-        localStorage.setItem('bloom_daily_data', JSON.stringify(allData));
-        
-        // 显示通知
-        if (typeof NotificationsModule !== 'undefined') {
-            NotificationsModule.showNotification('测试数据已添加', '成功生成了过去7天的测试数据');
-        } else {
-            alert('测试数据已添加！');
-        }
-        
-    } catch (error) {
-        console.error('添加测试数据失败:', error);
-        
-        if (typeof NotificationsModule !== 'undefined') {
-            NotificationsModule.showNotification('添加测试数据失败', error.message);
-        } else {
-            alert(`添加测试数据失败：${error.message}`);
-        }
-    }
-}
 
-// 重置今日数据功能
-function resetTodayDataFunction() {
-    try {
-        console.log('开始重置今日数据...');
-        
-        // 获取所有数据
-        const allData = JSON.parse(localStorage.getItem('bloom_daily_data')) || [];
-        const todayString = new Date().toISOString().split('T')[0];
-        
-        // 找到并移除今日数据
-        const index = allData.findIndex(data => data.date === todayString);
-        if (index !== -1) {
-            allData.splice(index, 1);
-        }
-        
-        // 保存更新后的数据
-        localStorage.setItem('bloom_daily_data', JSON.stringify(allData));
-        
-        // 显示通知
-        if (typeof NotificationsModule !== 'undefined') {
-            NotificationsModule.showNotification('今日数据已重置', '所有今日数据已被清除，页面即将刷新');
-        } else {
-            alert('今日数据已重置，页面即将刷新');
-        }
-        
-        // 刷新页面
-        setTimeout(() => {
-            window.location.reload();
-        }, 1500);
-        
-    } catch (error) {
-        console.error('重置今日数据失败:', error);
-        
-        if (typeof NotificationsModule !== 'undefined') {
-            NotificationsModule.showNotification('重置失败', `重置今日数据时出错: ${error.message}`);
-        } else {
-            alert(`重置失败：${error.message}`);
-        }
-    }
-}
+
+
+
+
+
 
 
 // 修改 fixTasksModule 函数
