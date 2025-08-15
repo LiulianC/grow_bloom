@@ -1055,7 +1055,7 @@ header nav {
 }
 
 .redbook-entry-time {
-    font-size: 12px;
+    font-size: 5px;
     color: var(--text-secondary);
     margin-top: 4px;
     text-align: right;
@@ -1165,20 +1165,14 @@ header nav {
 }
 
 .redbook-date-entries .redbook-entry-item {
-    max-width: 400px;
+    max-width: 690px;
     margin-left: auto;
     margin-right: auto;
 }
 
 #redbook-add-entry-modal {
     max-width: 600px;
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    bottom: auto !important;
-    right: auto !important;
-    transform: none !important;
-    margin: 0 !important;
+    margin: auto !important; /* 让它在 overlay 的 flex 容器内自动居中，即便对齐规则被意外覆盖也能兜底 */
 }
 
 #redbook-add-entry-modal .modal-header,

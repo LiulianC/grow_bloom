@@ -49,59 +49,57 @@ const RedbookModule = (() => {
             });
         }
 
-        // 确保关闭按钮正常工作
+        // 关闭按钮/遮罩点击
         document.addEventListener('click', function(e) {
             if (e.target.classList.contains('close-modal')) {
                 e.preventDefault();
                 closeModal();
             }
-            
             if (e.target.id === 'modal-overlay') {
                 closeModal();
             }
         });
 
-        // 历史红账按钮
-        const historyBtn = document.getElementById('redbook-history-btn');
-        if (historyBtn) {
-            historyBtn.addEventListener('click', showHistoryPage);
-        }
+        // 历史红账
+        document.getElementById('redbook-history-btn')?.addEventListener('click', showHistoryPage);
+        document.getElementById('redbook-search-btn')?.addEventListener('click', showSearchModal);
+        document.getElementById('redbook-search-btn-history')?.addEventListener('click', showSearchModal);
 
-        // 搜索按钮（主页面）
-        const searchBtn = document.getElementById('redbook-search-btn');
-        if (searchBtn) {
-            searchBtn.addEventListener('click', showSearchModal);
-        }
-
-        // 搜索按钮（历史页面）
-        const searchBtnHistory = document.getElementById('redbook-search-btn-history');
-        if (searchBtnHistory) {
-            searchBtnHistory.addEventListener('click', showSearchModal);
-        }
-
-        // 提交新条目表单
+        // 提交新条目/搜索
         const entryForm = document.getElementById('redbook-entry-form');
         if (entryForm) {
+            entryForm.removeEventListener('submit', handleAddEntry); // 清旧
             entryForm.addEventListener('submit', handleEntrySubmit);
         }
-
-        // 搜索表单
         const searchForm = document.getElementById('redbook-search-form');
-        if (searchForm) {
-            searchForm.addEventListener('submit', handleSearch);
+        if (searchForm) searchForm.addEventListener('submit', handleSearch);
+
+        // 返回
+        document.getElementById('redbook-back-to-main')?.addEventListener('click', showMainPage);
+        document.getElementById('redbook-back-to-history')?.addEventListener('click', showMainPage);
+    };
+
+    const openModalById = (modalId) => {
+        const overlay = document.getElementById('modal-overlay');
+        const modal = document.getElementById(modalId);
+        if (!overlay || !modal) return;
+
+        // 隐藏所有模态框
+        document.querySelectorAll('#modal-overlay .modal').forEach(m => m.classList.add('hidden'));
+
+        // 显示遮罩
+        overlay.classList.remove('hidden');
+
+        // 把目标模态框移到 overlay 的最后一个子节点，配合 .modal:last-child 的 z-index 规则
+        if (modal.parentNode !== overlay || overlay.lastElementChild !== modal) {
+            overlay.appendChild(modal);
         }
 
-        // 返回主页按钮
-        const backToMainBtn = document.getElementById('redbook-back-to-main');
-        if (backToMainBtn) {
-            backToMainBtn.addEventListener('click', showMainPage);
-        }
+        // 只通过 class 控制显示，不写入 inline 样式
+        modal.classList.remove('hidden');
 
-        // 返回历史页按钮
-        const backToHistoryBtn = document.getElementById('redbook-back-to-history');
-        if (backToHistoryBtn) {
-            backToHistoryBtn.addEventListener('click', showMainPage);
-        }
+        // 禁止页面滚动（避免背景跟随滚动）
+        document.body.style.overflow = 'hidden';
     };
 
     // 生成唯一ID
@@ -128,48 +126,18 @@ const RedbookModule = (() => {
     // 显示添加条目模态框
     const showAddEntryModal = () => {
         console.log('显示添加红账模态框');
-        
-        const overlay = document.getElementById('modal-overlay');
-        const modal = document.getElementById('redbook-add-entry-modal');
+
+        openModalById('redbook-add-entry-modal');
+
         const textarea = document.getElementById('redbook-entry-content');
-        
-        if (overlay && modal) {
-            // 防止页面滚动到底部
-            document.body.style.overflow = 'hidden';
-            
-            // 隐藏其他模态框
-            document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
-            
-            // 强制设置遮罩层样式
-            overlay.style.position = 'fixed';
-            overlay.style.top = '0';
-            overlay.style.left = '0';
-            overlay.style.right = '0';
-            overlay.style.bottom = '0';
-            overlay.style.display = 'flex';
-            overlay.style.alignItems = 'center';
-            overlay.style.justifyContent = 'center';
-            overlay.style.zIndex = '9999';
-            
-            // 强制设置模态框样式
-            modal.style.position = 'relative';
-            modal.style.top = 'auto';
-            modal.style.left = 'auto';
-            modal.style.transform = 'none';
-            modal.style.margin = '0';
-            
-            // 显示模态框
-            overlay.classList.remove('hidden');
-            modal.classList.remove('hidden');
-            
-            // 清空并聚焦输入框
-            if (textarea) {
-                textarea.value = '';
-                setTimeout(() => {
-                    textarea.focus();
-                }, 100);
-            }
+        if (textarea) {
+            textarea.value = '';
+            setTimeout(() => textarea.focus(), 50);
         }
+
+        // 如果之前是编辑态，重置按钮文案
+        const submitBtn = document.querySelector('#redbook-entry-form button[type="submit"]');
+        if (submitBtn) submitBtn.textContent = '添加';
     };
 
     // 处理添加条目
@@ -248,7 +216,6 @@ const RedbookModule = (() => {
             return `
                 <div class="redbook-entry-item" data-entry-id="${entry.id}">
                     <div class="redbook-entry-preview">${preview.replace(/\n/g, '<br>')}</div>
-                    <div class="redbook-entry-time">${time}</div>
                 </div>
             `;
         }).join('');
@@ -265,22 +232,13 @@ const RedbookModule = (() => {
     // 关闭模态框
     const closeModal = () => {
         const overlay = document.getElementById('modal-overlay');
-        const modal = document.getElementById('redbook-add-entry-modal');
-        
-        if (overlay) {
-            overlay.classList.add('hidden');
-            overlay.style.display = 'none';
-        }
-        
-        if (modal) {
-            modal.classList.add('hidden');
-            modal.style.display = 'none';
-        }
-        
+        if (overlay) overlay.classList.add('hidden');
+
+        // 隐藏所有模态框
+        document.querySelectorAll('#modal-overlay .modal').forEach(m => m.classList.add('hidden'));
+
         // 恢复页面滚动
         document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.body.style.width = '';
     };
 
     // 显示条目详情
@@ -332,32 +290,20 @@ const RedbookModule = (() => {
     const editEntry = (entryId) => {
         const entries = getAllEntries();
         const entry = entries.find(e => e.id === entryId);
-        
         if (!entry) return;
 
         currentEditingEntryId = entryId;
-        
-        // 显示编辑模态框
-        const overlay = document.getElementById('modal-overlay');
-        const modal = document.getElementById('redbook-add-entry-modal');
+
+        openModalById('redbook-add-entry-modal');
+
         const textarea = document.getElementById('redbook-entry-content');
         const submitBtn = document.querySelector('#redbook-entry-form button[type="submit"]');
-        
-        if (overlay && modal && textarea && submitBtn) {
-            // 隐藏其他模态框
-            document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
-            
-            // 显示模态框
-            overlay.classList.remove('hidden');
-            modal.classList.remove('hidden');
-            
-            // 填充现有内容
+
+        if (textarea) {
             textarea.value = entry.content;
             textarea.focus();
-            
-            // 修改按钮文本
-            submitBtn.textContent = '更新';
         }
+        if (submitBtn) submitBtn.textContent = '更新';
     };
 
     // 删除条目
@@ -463,7 +409,6 @@ const RedbookModule = (() => {
                             return `
                                 <div class="redbook-entry-item" data-entry-id="${entry.id}">
                                     <div class="redbook-entry-preview">${preview.replace(/\n/g, '<br>')}</div>
-                                    <div class="redbook-entry-time">${time}</div>
                                 </div>
                             `;
                         }).join('')}
@@ -483,24 +428,12 @@ const RedbookModule = (() => {
 
     // 显示搜索模态框
     const showSearchModal = () => {
-        const overlay = document.getElementById('modal-overlay');
-        const modal = document.getElementById('redbook-search-modal');
-        
-        if (overlay && modal) {
-            // 隐藏其他模态框
-            document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
-            
-            // 显示模态框
-            overlay.classList.remove('hidden');
-            modal.classList.remove('hidden');
-            
-            // 清空搜索表单
-            const form = document.getElementById('redbook-search-form');
-            if (form) {
-                form.reset();
-            }
-        }
+        openModalById('redbook-search-modal');
+
+        const form = document.getElementById('redbook-search-form');
+        if (form) form.reset();
     };
+
 
     // 处理搜索
     const handleSearch = (e) => {
@@ -582,7 +515,7 @@ const RedbookModule = (() => {
     // 修改条目提交处理，支持编辑
     const handleEntrySubmit = (e) => {
         e.preventDefault();
-        
+
         const content = document.getElementById('redbook-entry-content').value.trim();
         if (!content) {
             if (typeof NotificationsModule !== 'undefined') {
@@ -592,30 +525,24 @@ const RedbookModule = (() => {
         }
 
         const entries = getAllEntries();
-        
+
         if (currentEditingEntryId) {
-            // 编辑现有条目
+            // 编辑
             const entryIndex = entries.findIndex(e => e.id === currentEditingEntryId);
             if (entryIndex !== -1) {
                 entries[entryIndex].content = content;
                 entries[entryIndex].updatedTime = new Date().toISOString();
-                
                 saveAllEntries(entries);
-                
-                // 关闭模态框并恢复滚动
-                document.getElementById('modal-overlay').classList.add('hidden');
-                document.getElementById('redbook-add-entry-modal').classList.add('hidden');
-                document.body.style.overflow = ''; // 恢复滚动
-                
-                // 显示详情页面
+
+                closeModal(); // 统一关闭
+
                 showEntryDetail(currentEditingEntryId);
-                
                 if (typeof NotificationsModule !== 'undefined') {
                     NotificationsModule.showNotification('更新成功', '记录已更新');
                 }
             }
         } else {
-            // 添加新条目
+            // 新增
             const newEntry = {
                 id: generateId(),
                 content: content,
@@ -623,19 +550,12 @@ const RedbookModule = (() => {
                 updatedTime: new Date().toISOString(),
                 date: getTodayString()
             };
-
             entries.push(newEntry);
             saveAllEntries(entries);
 
-            // 关闭模态框并恢复滚动
-            document.getElementById('modal-overlay').classList.add('hidden');
-            document.getElementById('redbook-add-entry-modal').classList.add('hidden');
-            document.body.style.overflow = ''; // 恢复滚动
+            closeModal(); // 统一关闭
 
-            // 重新加载今日条目
             loadTodayEntries();
-
-            // 显示成功消息
             if (typeof NotificationsModule !== 'undefined') {
                 NotificationsModule.showNotification('添加成功', '美好时刻已记录');
             }
