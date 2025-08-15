@@ -62,16 +62,17 @@ const SettingsModule = (() => {
             
             newImportBtn.addEventListener('click', function() {
                 try {
-                    document.getElementById('import-file-input').click();
+                    // 修改为新的ID
+                    document.getElementById('settings-import-file-input').click();
                 } catch (error) {
                     console.error('打开文件选择失败:', error);
                     NotificationsModule.showNotification('导入失败', error.message);
                 }
             });
         }
-        
-        // 文件选择输入
-        const importFileInput = document.getElementById('import-file-input');
+
+        // 文件选择输入 - 修改为新的ID
+        const importFileInput = document.getElementById('settings-import-file-input');
         if (importFileInput) {
             const newFileInput = importFileInput.cloneNode(true);
             importFileInput.parentNode.replaceChild(newFileInput, importFileInput);

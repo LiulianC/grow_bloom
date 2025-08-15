@@ -42,8 +42,24 @@ const RedbookModule = (() => {
         // 添加红账按钮
         const addEntryBtn = document.getElementById('add-redbook-entry-btn');
         if (addEntryBtn) {
-            addEntryBtn.addEventListener('click', showAddEntryModal);
+            addEntryBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                showAddEntryModal();
+            });
         }
+
+        // 确保关闭按钮正常工作
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('close-modal')) {
+                e.preventDefault();
+                closeModal();
+            }
+            
+            if (e.target.id === 'modal-overlay') {
+                closeModal();
+            }
+        });
 
         // 历史红账按钮
         const historyBtn = document.getElementById('redbook-history-btn');
@@ -111,13 +127,36 @@ const RedbookModule = (() => {
 
     // 显示添加条目模态框
     const showAddEntryModal = () => {
+        console.log('显示添加红账模态框');
+        
         const overlay = document.getElementById('modal-overlay');
         const modal = document.getElementById('redbook-add-entry-modal');
         const textarea = document.getElementById('redbook-entry-content');
         
         if (overlay && modal) {
+            // 防止页面滚动到底部
+            document.body.style.overflow = 'hidden';
+            
             // 隐藏其他模态框
             document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
+            
+            // 强制设置遮罩层样式
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.right = '0';
+            overlay.style.bottom = '0';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.zIndex = '9999';
+            
+            // 强制设置模态框样式
+            modal.style.position = 'relative';
+            modal.style.top = 'auto';
+            modal.style.left = 'auto';
+            modal.style.transform = 'none';
+            modal.style.margin = '0';
             
             // 显示模态框
             overlay.classList.remove('hidden');
@@ -126,7 +165,9 @@ const RedbookModule = (() => {
             // 清空并聚焦输入框
             if (textarea) {
                 textarea.value = '';
-                textarea.focus();
+                setTimeout(() => {
+                    textarea.focus();
+                }, 100);
             }
         }
     };
@@ -219,6 +260,27 @@ const RedbookModule = (() => {
                 showEntryDetail(entryId);
             });
         });
+    };
+
+    // 关闭模态框
+    const closeModal = () => {
+        const overlay = document.getElementById('modal-overlay');
+        const modal = document.getElementById('redbook-add-entry-modal');
+        
+        if (overlay) {
+            overlay.classList.add('hidden');
+            overlay.style.display = 'none';
+        }
+        
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        }
+        
+        // 恢复页面滚动
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
     };
 
     // 显示条目详情
@@ -540,9 +602,10 @@ const RedbookModule = (() => {
                 
                 saveAllEntries(entries);
                 
-                // 关闭模态框
+                // 关闭模态框并恢复滚动
                 document.getElementById('modal-overlay').classList.add('hidden');
                 document.getElementById('redbook-add-entry-modal').classList.add('hidden');
+                document.body.style.overflow = ''; // 恢复滚动
                 
                 // 显示详情页面
                 showEntryDetail(currentEditingEntryId);
@@ -553,7 +616,29 @@ const RedbookModule = (() => {
             }
         } else {
             // 添加新条目
-            handleAddEntry(e);
+            const newEntry = {
+                id: generateId(),
+                content: content,
+                createdTime: new Date().toISOString(),
+                updatedTime: new Date().toISOString(),
+                date: getTodayString()
+            };
+
+            entries.push(newEntry);
+            saveAllEntries(entries);
+
+            // 关闭模态框并恢复滚动
+            document.getElementById('modal-overlay').classList.add('hidden');
+            document.getElementById('redbook-add-entry-modal').classList.add('hidden');
+            document.body.style.overflow = ''; // 恢复滚动
+
+            // 重新加载今日条目
+            loadTodayEntries();
+
+            // 显示成功消息
+            if (typeof NotificationsModule !== 'undefined') {
+                NotificationsModule.showNotification('添加成功', '美好时刻已记录');
+            }
         }
     };
 

@@ -503,17 +503,13 @@ button:disabled {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 20;
+    z-index: 1000;
 }
 
-.modal {
-    background-color: var(--bg-card);
-    border-radius: var(--border-radius-md);
-    width: 90%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
+#modal-overlay.hidden {
+    display: none;
 }
+
 
 .modal-header {
     padding: var(--spacing-md);
@@ -537,6 +533,13 @@ button:disabled {
     padding: var(--spacing-md);
 }
 
+#dev-options {
+    padding: var(--spacing-md); /* 添加内边距 */
+    background-color: var(--bg-secondary, #f8f9fa);
+    border-radius: var(--border-radius-md);
+    margin-top: var(--spacing-md);
+}
+
 .form-group {
     margin-bottom: var(--spacing-md);
 }
@@ -545,6 +548,7 @@ button:disabled {
     display: block;
     margin-bottom: var(--spacing-xs);
     font-weight: 500;
+    color: var(--text-primary);
 }
 
 .form-group input,
@@ -879,17 +883,19 @@ body.dark-mode .checkin-card {
 /* 设置模态框样式 */
 .settings-section {
     margin-bottom: var(--spacing-lg);
-    padding-bottom: var(--spacing-md);
-    border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-md); /* 添加内边距与边框保持距离 */
+    border: 1px solid var(--border-color, #e0e0e0); /* 可选：添加边框 */
+    border-radius: var(--border-radius-md);
+}
+
+.settings-section h4 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-primary);
 }
 
 .settings-section:last-child {
     border-bottom: none;
-}
-
-.settings-section h4 {
-    margin-bottom: var(--spacing-md);
-    color: var(--primary-color);
 }
 
 .settings-info {
@@ -907,16 +913,26 @@ body.dark-mode .checkin-card {
     margin-bottom: var(--spacing-md);
 }
 
+/* 时间范围输入框布局修复 */
 .time-range-inputs {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
+    flex-wrap: nowrap; /* 防止换行 */
 }
 
 .time-range-inputs input[type="time"] {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--border-radius-sm);
+    flex: 0 0 auto; /* 不伸缩，保持固定宽度 */
+    width: 120px; /* 设置固定宽度 */
+    padding: var(--spacing-sm);
     border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+}
+
+.time-range-inputs span {
+    flex: 0 0 auto;
+    font-size: 14px;
+    color: var(--text-secondary);
 }
 
 /* 修复设置页面复选框对齐问题 */
@@ -952,10 +968,10 @@ body.dark-mode .checkin-card {
 /* 设置描述文字样式 */
 .setting-desc {
     margin-top: var(--spacing-xs);
-    margin-left: calc(16px + var(--spacing-sm)); /* 与复选框文字对齐 */
+    margin-bottom: 0;
+    font-size: 12px;
     color: var(--text-secondary);
-    font-size: 0.85rem;
-    line-height: 1.3;
+    line-height: 1.4;
 }
 
 .warning-btn {
@@ -986,32 +1002,12 @@ header nav {
 }
 
 
-/* 在现有CSS基础上添加以下样式来确保模态框正确显示 */
-
-/* 确保模态框遮罩层正确显示 */
-#modal-overlay {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    background-color: rgba(0, 0, 0, 0.5) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    z-index: 1000 !important;
-}
-
-#modal-overlay.hidden {
-    display: none !important;
-}
-
 /* 确保设置模态框正确显示 */
 #settings-modal {
     background-color: var(--bg-card) !important;
     border-radius: var(--border-radius-md) !important;
     width: 90% !important;
-    max-width: 600px !important;
+    max-width: 700px !important;
     max-height: 90vh !important;
     overflow-y: auto !important;
     position: relative !important;
@@ -1024,14 +1020,16 @@ header nav {
 
 /* 确保其他模态框也正确显示 */
 .modal {
-    background-color: var(--bg-card);
-    border-radius: var(--border-radius-md);
+    position: relative; /* 改为relative，让flex布局控制位置 */
+    background: var(--bg-card);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
     width: 90%;
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
-    position: relative;
-    z-index: 1001;
+    margin: 0; /* 清除可能的margin */
+    transform: none; /* 清除可能的transform */
 }
 
 .modal.hidden {
@@ -1046,18 +1044,25 @@ body.dark-mode .modal {
 }
 
 
-/* 确保模态框层级正确 */
-#modal-overlay {
-    z-index: 1000 !important;
-}
-
-.modal {
-    z-index: 1001 !important;
-}
 
 /* 确认对话框的更高层级 */
 .modal:last-child {
     z-index: 1002 !important;
+}
+
+@media (max-width: 600px) {
+    .modal {
+        width: 95%;
+        max-width: none;
+    }
+    
+    .time-range-inputs {
+        flex-wrap: wrap; /* 小屏幕允许换行 */
+    }
+    
+    .time-range-inputs input[type="time"] {
+        width: 100px; /* 小屏幕缩小宽度 */
+    }
 }
 
 /* 起床打卡状态样式 */
@@ -1391,6 +1396,44 @@ button.secondary-btn:disabled {
     margin-right: auto;
 }
 
+
+#redbook-add-entry-modal {
+    max-width: 600px;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    bottom: auto !important;
+    right: auto !important;
+}
+
+
+#redbook-add-entry-modal .modal-header h3,
+#redbook-search-modal .modal-header h3 {
+    color: white;
+}
+
+/* 确保按钮可见 */
+#redbook-add-entry-modal .form-actions,
+#redbook-search-modal .form-actions {
+    margin-top: var(--spacing-md);
+    text-align: right;
+}
+
+#redbook-add-entry-modal .primary-btn,
+#redbook-search-modal .primary-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+}
+
+#redbook-add-entry-modal .primary-btn:hover,
+#redbook-search-modal .primary-btn:hover {
+    background: #c0392b;
+}
+
 /* 红账本模态框样式 */
 #redbook-add-entry-modal .modal-header,
 #redbook-search-modal .modal-header {
@@ -1496,3 +1539,71 @@ button.secondary-btn:disabled {
     border-top: 3px solid var(--redbook-primary);
 }
 
+#modal-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 9999 !important;
+}
+
+#modal-overlay.hidden {
+    display: none !important;
+}
+
+/* 强制红账本模态框居中 */
+#redbook-add-entry-modal {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    bottom: auto !important;
+    right: auto !important;
+    transform: none !important;
+    margin: 0 !important;
+    max-width: 600px !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Firefox兼容性修复 - 防止webkit-mask警告 */
+*[data-v] {
+    display: none !important;
+}
+
+.yd-translate-loader-block {
+    display: none !important;
+}
+
+/* 确保FontAwesome图标正常显示 */
+.fa, .fas, .far, .fal, .fab {
+    -webkit-mask: none !important;
+    mask: none !important;
+}
+
+/* 修复第三方组件的mask兼容性 */
+@supports not (-webkit-mask: none) {
+    *[class*="loader"]::before,
+    *[class*="mask"]::before {
+        -webkit-mask: none !important;
+        mask: none !important;
+    }
+}

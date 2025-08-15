@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <title>成长小账本 | Bloom Diary</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/dark-mode.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 使用本地FontAwesome CSS -->
+    <link rel="stylesheet" href="css/fontawesome.min.css">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#f8c3cd">
+    <meta name="theme-color" content="#f8c3cd"> 
 </head>
 <body>
     <div id="app">
@@ -381,10 +385,11 @@
                 <button class="close-modal">×</button>
             </div>
             <div class="modal-body">
+                <!-- 设置模态框中的文件输入 - 修改ID避免冲突 -->
                 <div class="settings-section">
                     <h4>数据管理</h4>
                     <div class="settings-info">
-                        <p>当前数据存储位置：浏览器本地存储(LocalStorage)</p>
+                        <p>当前数据存储位置：浏览器本地存储(LocalStor age)</p>
                         <p>数据总大小：<span id="data-size">计算中...</span></p>
                     </div>
                     <div class="settings-actions">
@@ -402,9 +407,15 @@
                         </button>
                     </div>
                     
-                    <!-- 隐藏的文件输入 -->
-                    <input type="file" id="import-file-input" accept=".json" style="display: none;">
-                    
+                    <!-- 修改文件输入的ID，避免与其他元素冲突 -->
+                    <label for="settings-import-file-input" class="sr-only">选择要导入的数据文件</label>
+                    <input type="file" 
+                        id="settings-import-file-input" 
+                        accept=".json" 
+                        style="display: none;"
+                        aria-label="选择要导入的JSON数据文件"
+                        title="选择要导入的数据文件">
+                </div>                    
                     <!-- 自动备份设置 -->
                     <div class="form-group">
                         <label class="checkbox-label">
@@ -459,7 +470,7 @@
                 
                 <div class="settings-section">
                     <h4>开发者选项</h4>
-                    <div class="form-group">
+                    <div class="form-group">   
                         <label class="checkbox-label">
                             <input type="checkbox" id="dev-mode-toggle">
                             <span>开发者模式</span>
@@ -559,17 +570,48 @@
     <script src="js/redbook.js"></script>
     <script src="js/app.js"></script>
     <script>
-        // 注册 Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker registered');
-                    })
-                    .catch(error => {
-                        console.error('Service Worker registration failed:', error);
+        // 注册 Service Worker - 完整版本
+        function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) {
+                console.log('当前浏览器不支持 Service Worker');
+                return;
+            }
+
+            // 检查协议支持
+            const isSecureContext = location.protocol === 'https:' || 
+                                location.hostname === 'localhost' || 
+                                location.hostname === '127.0.0.1' ||
+                                location.hostname === '0.0.0.0';
+
+            if (!isSecureContext) {
+                console.log('Service Worker 需要安全上下文 (HTTPS/localhost)，当前协议:', location.protocol);
+                return;
+            }
+
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(registration => {
+                    console.log('Service Worker 注册成功:', registration.scope);
+                    
+                    // 监听更新
+                    registration.addEventListener('updatefound', () => {
+                        console.log('发现新的 Service Worker');
                     });
-            });
+                })
+                .catch(error => {
+                    console.warn('Service Worker 注册失败:', error.message);
+                    
+                    // 根据错误类型提供友好提示
+                    if (error.message.includes('protocol')) {
+                        console.log('提示: 请在 HTTPS 环境或本地服务器中运行应用');
+                    }
+                });
+        }
+
+        // 页面加载完成后注册
+        if (document.readyState === 'loading') {
+            window.addEventListener('load', registerServiceWorker);
+        } else {
+            registerServiceWorker();
         }
     </script>
 </body>
