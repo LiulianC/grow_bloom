@@ -561,6 +561,12 @@
 
     <!-- 脚本加载 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <!-- 如果 CDN 加载失败，使用本地备份（同步兜底，避免初始化过早进入简化模式） -->
+    <script>
+        if (typeof window.Chart === 'undefined') {
+            document.write('<script src="js/chart.min.js"><\/script>');
+        }
+    </script>
     <script src="js/storage.js"></script>
     <script src="js/timer.js"></script>
     <script src="js/tasks.js"></script>

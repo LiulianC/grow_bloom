@@ -400,23 +400,12 @@ const StatisticsModule = (() => {
         }
     };
     
-    const initialize = () => {
-        console.log('初始化统计模块...');
-        
-        if (typeof Chart === 'undefined') {
-            console.warn('Chart.js is not available, statistics module will be limited');
-            setupLimitedStatistics();
-            return;
-        }
-        
+    // 将原 initialize 中“Chart 不存在就直接简化”的逻辑，改为先短暂重试一次
+    const initializeWithChart = () => {
         try {
-
             setupCharts();
-
-            setupChartTabs(); 
-
-            setupWakeupChart();     
-
+            setupChartTabs();
+            setupWakeupChart();
             setupPeriodSwitching();
             
             if (document.querySelectorAll('.chart-tab').length > 0) {
@@ -424,16 +413,33 @@ const StatisticsModule = (() => {
             }
             
             setupDataExport();
-            
             setTimeout(() => {
                 updateDailyChart();
             }, 100);
-            
             console.log('统计模块初始化完成');
         } catch (error) {
             console.error('统计模块初始化失败:', error);
             setupLimitedStatistics();
         }
+    };
+
+    const initialize = () => {
+        console.log('初始化统计模块...');
+        
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js 未就绪，稍后重试一次再决定是否进入简化模式');
+            setTimeout(() => {
+                if (typeof Chart === 'undefined') {
+                    console.warn('Chart.js 仍未加载，使用简化统计模式');
+                    setupLimitedStatistics();
+                } else {
+                    initializeWithChart();
+                }
+            }, 300);
+            return;
+        }
+        
+        initializeWithChart();
     };
     
     // Setup limited statistics when Chart.js is not available
