@@ -192,10 +192,185 @@ const SettingsModule = (() => {
         });
     };
     
+    // 初始化文件保险库管理器
+    const initializeVaultManager = async () => {
+        try {
+            // 初始化FileVault
+            const vaultAvailable = await FileVault.initialize();
+            
+            // 更新存储信息显示
+            const vaultStorageInfo = document.getElementById('vault-storage-info');
+            if (vaultStorageInfo) {
+                if (vaultAvailable) {
+                    vaultStorageInfo.textContent = FileVault.isAvailable() ? 
+                        '存储方式：数据文件夹已启用 (OPFS)' : 
+                        '存储方式：数据文件夹已启用 (localStorage)';
+                } else {
+                    vaultStorageInfo.textContent = '存储方式：降级到下载模式';
+                }
+            }
+            
+            // 更新文件夹名称
+            const vaultFolderName = document.getElementById('vault-folder-name');
+            if (vaultFolderName) {
+                vaultFolderName.textContent = FileVault.getFolderName();
+            }
+            
+            // 设置刷新按钮事件
+            setupVaultRefreshButton();
+            
+            // 加载文件列表
+            await loadVaultFileList();
+        } catch (error) {
+            console.error('初始化文件保险库管理器失败:', error);
+            const vaultFileList = document.getElementById('vault-file-list');
+            if (vaultFileList) {
+                vaultFileList.innerHTML = `<div class="loading-message">初始化失败: ${error.message}</div>`;
+            }
+        }
+    };
+    
+    // 设置刷新按钮事件
+    const setupVaultRefreshButton = () => {
+        const refreshBtn = document.getElementById('refresh-vault-files');
+        if (refreshBtn) {
+            const newRefreshBtn = refreshBtn.cloneNode(true);
+            refreshBtn.parentNode.replaceChild(newRefreshBtn, refreshBtn);
+            
+            newRefreshBtn.addEventListener('click', async function() {
+                try {
+                    newRefreshBtn.disabled = true;
+                    newRefreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 刷新中...';
+                    await loadVaultFileList();
+                } catch (error) {
+                    console.error('刷新文件列表失败:', error);
+                    NotificationsModule.showNotification('刷新失败', error.message);
+                } finally {
+                    newRefreshBtn.disabled = false;
+                    newRefreshBtn.innerHTML = '<i class="fas fa-sync"></i> 刷新文件列表';
+                }
+            });
+        }
+    };
+    
+    // 加载文件保险库文件列表
+    const loadVaultFileList = async () => {
+        const vaultFileList = document.getElementById('vault-file-list');
+        if (!vaultFileList) return;
+        
+        try {
+            vaultFileList.innerHTML = '<div class="loading-message">加载文件列表中...</div>';
+            
+            const files = await FileVault.listFiles();
+            
+            if (files.length === 0) {
+                vaultFileList.innerHTML = `
+                    <div class="empty-vault-message">
+                        <i class="fas fa-folder-open"></i>
+                        <p>数据文件夹为空</p>
+                        <p>导出数据或自动备份后文件将出现在这里</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 渲染文件列表
+            const fileListHTML = files.map(file => `
+                <div class="vault-file-item">
+                    <div class="vault-file-info">
+                        <div class="vault-file-name">${file.name}</div>
+                        <div class="vault-file-details">
+                            <span>大小: ${FileVault.formatFileSize(file.size)}</span>
+                            <span>修改时间: ${FileVault.formatDate(file.lastModified)}</span>
+                        </div>
+                    </div>
+                    <div class="vault-file-actions">
+                        <button class="import-btn" onclick="SettingsModule.importVaultFile('${file.name}')">
+                            导入
+                        </button>
+                        <button onclick="SettingsModule.renameVaultFile('${file.name}')">
+                            重命名
+                        </button>
+                        <button class="danger" onclick="SettingsModule.deleteVaultFile('${file.name}')">
+                            删除
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            vaultFileList.innerHTML = fileListHTML;
+        } catch (error) {
+            console.error('加载文件列表失败:', error);
+            vaultFileList.innerHTML = `<div class="loading-message">加载失败: ${error.message}</div>`;
+        }
+    };
+    
+    // 从文件保险库导入文件
+    const importVaultFile = async (fileName) => {
+        try {
+            const fileContent = await FileVault.readFile(fileName);
+            if (!fileContent) {
+                throw new Error('无法读取文件内容');
+            }
+            
+            // 使用现有的导入流程
+            importData(fileContent);
+        } catch (error) {
+            console.error('从文件保险库导入失败:', error);
+            NotificationsModule.showNotification('导入失败', `无法导入文件 ${fileName}: ${error.message}`);
+        }
+    };
+    
+    // 重命名文件保险库文件
+    const renameVaultFile = async (oldName) => {
+        try {
+            const newName = prompt('请输入新的文件名:', oldName);
+            if (!newName || newName === oldName) {
+                return;
+            }
+            
+            // 验证文件名
+            if (!newName.endsWith('.json')) {
+                throw new Error('文件名必须以.json结尾');
+            }
+            
+            const success = await FileVault.renameFile(oldName, newName);
+            if (success) {
+                NotificationsModule.showNotification('重命名成功', `文件已重命名为 ${newName}`);
+                await loadVaultFileList();
+            } else {
+                throw new Error('重命名操作失败');
+            }
+        } catch (error) {
+            console.error('重命名文件失败:', error);
+            NotificationsModule.showNotification('重命名失败', error.message);
+        }
+    };
+    
+    // 删除文件保险库文件
+    const deleteVaultFile = async (fileName) => {
+        try {
+            const confirmed = confirm(`确定要删除文件 "${fileName}" 吗？\n此操作无法撤销。`);
+            if (!confirmed) {
+                return;
+            }
+            
+            const success = await FileVault.deleteFile(fileName);
+            if (success) {
+                NotificationsModule.showNotification('删除成功', `文件 ${fileName} 已删除`);
+                await loadVaultFileList();
+            } else {
+                throw new Error('删除操作失败');
+            }
+        } catch (error) {
+            console.error('删除文件失败:', error);
+            NotificationsModule.showNotification('删除失败', error.message);
+        }
+    };
 
     
     // 打开设置模态框
-    const openSettingsModal = () => {
+    const openSettingsModal = async () => {
         try {
             console.log('打开设置模态框');
             
@@ -221,6 +396,9 @@ const SettingsModule = (() => {
             
             // 加载当前设置
             loadCurrentSettings();
+            
+            // 初始化FileVault并加载文件管理器
+            await initializeVaultManager();
         } catch (error) {
             console.error('打开设置模态框失败:', error);
             throw error; // 重新抛出异常以便调用者处理
@@ -309,7 +487,7 @@ const SettingsModule = (() => {
     };
     
     // 导出所有数据
-    const exportAllData = () => {
+    const exportAllData = async () => {
         try {
             // 获取所有数据
             const allData = {
@@ -321,32 +499,22 @@ const SettingsModule = (() => {
                 redbookSettings: JSON.parse(localStorage.getItem('bloom_redbook_settings')) || {}
             };
             
-            // 转换为JSON
-            const jsonData = JSON.stringify(allData, null, 2);
+            // 生成文件名
+            const fileName = `full_export_${StorageService.getTodayString()}.json`;
             
-            // 创建Blob
-            const blob = new Blob([jsonData], {type: 'application/json'});
+            // 尝试保存到FileVault
+            const saved = await FileVault.saveJSON(fileName, allData);
             
-            // 创建下载链接
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            
-            // 设置下载属性
-            const fileName = `bloom_diary_full_export_${StorageService.getTodayString()}.json`;
-            link.setAttribute('href', url);
-            link.setAttribute('download', fileName);
-            
-            // 添加到文档并模拟点击
-            document.body.appendChild(link);
-            link.click();
-            
-            // 清理
-            setTimeout(() => {
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-            }, 100);
-            
-            NotificationsModule.showNotification('导出成功', `所有数据已成功导出为 ${fileName}`);
+            if (saved) {
+                NotificationsModule.showNotification('导出成功', `数据已保存到文件夹: ${fileName}`);
+                // 如果设置模态框是打开的，刷新文件列表
+                if (!document.getElementById('settings-modal').classList.contains('hidden')) {
+                    await loadVaultFileList();
+                }
+            } else {
+                // 降级到直接下载（FileVault内部已处理）
+                NotificationsModule.showNotification('导出完成', `文件已下载: ${fileName}`);
+            }
             
         } catch (error) {
             console.error('导出所有数据失败:', error);
@@ -961,6 +1129,9 @@ const SettingsModule = (() => {
         initialize,
         calculateDataSize,
         loadCurrentSettings,
-        openSettingsModal  // 添加此方法到公开API
+        openSettingsModal,  // 添加此方法到公开API
+        importVaultFile,
+        renameVaultFile,
+        deleteVaultFile
     };
 })();

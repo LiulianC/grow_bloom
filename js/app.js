@@ -23,6 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 检查并执行自动备份
     checkAndPerformAutoBackup();
     
+    // 启动每日23:00备份调度器
+    startDailyBackupScheduler();
+    
     // 添加额外的修复和确保功能正常
     ensureAllFunctionsWork();
 });
@@ -498,34 +501,8 @@ function fixSettingsButton() {
             console.log('设置按钮被点击');
             
             try {
-                // 检查必要的DOM元素
-                const modalOverlay = document.getElementById('modal-overlay');
-                const settingsModal = document.getElementById('settings-modal');
-                
-                if (!modalOverlay || !settingsModal) {
-                    throw new Error('找不到必要的模态框元素');
-                }
-                
-                // 确保所有其他模态框都隐藏
-                document.querySelectorAll('.modal').forEach(modal => {
-                    modal.classList.add('hidden');
-                });
-                
-                // 显示模态框遮罩
-                modalOverlay.classList.remove('hidden');
-                
-                // 显示设置模态框
-                settingsModal.classList.remove('hidden');
-                
-                // 计算数据大小
-                calculateDataSizeForSettings();
-                
-                // 加载当前设置
-                loadCurrentSettingsForApp();
-                
-                // 修复关闭按钮（重要！）
-                fixModalCloseButtons();
-                
+                // 使用SettingsModule的openSettingsModal方法
+                SettingsModule.openSettingsModal();
             } catch (error) {
                 console.error('打开设置失败:', error);
                 
@@ -546,7 +523,8 @@ function fixSettingsButton() {
 
 
 // 导出所有数据功能
-function exportAllDataFunction() {
+// 导出所有数据功能
+async function exportAllDataFunction() {
     try {
         console.log('开始导出所有数据...');
         
@@ -560,38 +538,28 @@ function exportAllDataFunction() {
             redbookSettings: JSON.parse(localStorage.getItem('bloom_redbook_settings')) || {}
         };
         
-        // 转换为JSON
-        const jsonData = JSON.stringify(allData, null, 2);
-        
-        // 创建Blob
-        const blob = new Blob([jsonData], {type: 'application/json'});
-        
-        // 创建下载链接
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        
-        // 设置下载属性
+        // 生成文件名
         const now = new Date();
         const dateString = now.toISOString().split('T')[0];
-        const fileName = `bloom_diary_full_export_${dateString}.json`;
-        link.setAttribute('href', url);
-        link.setAttribute('download', fileName);
+        const fileName = `full_export_${dateString}.json`;
         
-        // 添加到文档并模拟点击
-        document.body.appendChild(link);
-        link.click();
+        // 尝试保存到FileVault
+        const saved = await FileVault.saveJSON(fileName, allData);
         
-        // 清理
-        setTimeout(() => {
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }, 100);
-        
-        // 显示成功通知
-        if (typeof NotificationsModule !== 'undefined') {
-            NotificationsModule.showNotification('导出成功', `所有数据已成功导出为 ${fileName}`);
+        if (saved) {
+            // 显示成功通知
+            if (typeof NotificationsModule !== 'undefined') {
+                NotificationsModule.showNotification('导出成功', `数据已保存到文件夹: ${fileName}`);
+            } else {
+                alert(`导出成功！文件已保存：${fileName}`);
+            }
         } else {
-            alert(`导出成功！文件名：${fileName}`);
+            // 降级到直接下载（FileVault内部已处理）
+            if (typeof NotificationsModule !== 'undefined') {
+                NotificationsModule.showNotification('导出完成', `文件已下载: ${fileName}`);
+            } else {
+                alert(`导出完成！文件已下载：${fileName}`);
+            }
         }
         
     } catch (error) {
@@ -1325,7 +1293,7 @@ function updateWakeupUI(checkInTime, hasReward) {
 window.updateDailyOverview = updateDailyOverview;
 
 // 检查并执行自动备份
-function checkAndPerformAutoBackup() {
+async function checkAndPerformAutoBackup() {
     try {
         const settings = StorageService.getSettings();
         
@@ -1341,7 +1309,7 @@ function checkAndPerformAutoBackup() {
         // 如果今天还没有备份过，执行备份
         if (lastBackupDate !== today) {
             console.log('执行自动备份...');
-            performAutoBackup(today);
+            await performAutoBackup(today);
         } else {
             console.log('今天已经完成自动备份');
         }
@@ -1351,7 +1319,7 @@ function checkAndPerformAutoBackup() {
 }
 
 // 执行自动备份
-function performAutoBackup(todayString) {
+async function performAutoBackup(todayString) {
     try {
         // 收集所有数据
         const backupData = {
@@ -1363,10 +1331,10 @@ function performAutoBackup(todayString) {
             version: "1.0"
         };
         
-        const fileName = `bloom_auto_backup_${todayString}.json`;
+        const fileName = `latest_data_${todayString}.json`;
         
-        // 下载备份文件
-        downloadJSON(backupData, fileName);
+        // 尝试保存到FileVault
+        const saved = await FileVault.saveJSON(fileName, backupData);
         
         // 更新最后备份日期
         StorageService.updateSettings({
@@ -1377,7 +1345,11 @@ function performAutoBackup(todayString) {
         cleanupOldBackups();
         
         // 显示成功通知
-        NotificationsModule.showNotification('自动备份完成', `已生成备份文件: ${fileName}`);
+        if (saved) {
+            NotificationsModule.showNotification('自动备份完成', `已保存到文件夹: ${fileName}`);
+        } else {
+            NotificationsModule.showNotification('自动备份完成', `已下载备份文件: ${fileName}`);
+        }
         
         console.log('自动备份完成:', fileName);
         
@@ -1439,5 +1411,46 @@ function cleanupOldBackups() {
         
     } catch (error) {
         console.error('清理备份记录时出错:', error);
+    }
+}
+
+// 启动每日23:00备份调度器
+function startDailyBackupScheduler() {
+    console.log('启动每日备份调度器...');
+    
+    // 立即检查是否需要备份（如果当前时间已过23:00）
+    checkNightlyBackup();
+    
+    // 设置定时检查 - 每5分钟检查一次
+    setInterval(checkNightlyBackup, 5 * 60 * 1000);
+}
+
+// 检查是否到了夜间备份时间
+async function checkNightlyBackup() {
+    try {
+        const now = new Date();
+        const currentTime = now.getHours() * 60 + now.getMinutes(); // 转换为分钟
+        const targetTime = 23 * 60; // 23:00 = 1380分钟
+        
+        // 检查是否已经过了23:00
+        if (currentTime >= targetTime) {
+            const settings = StorageService.getSettings();
+            
+            // 如果自动备份被禁用，直接返回
+            if (!settings.autoBackupEnabled) {
+                return;
+            }
+            
+            const today = new Date().toISOString().split('T')[0];
+            const lastBackupDate = settings.lastBackupDate;
+            
+            // 如果今天还没有备份过，执行夜间备份
+            if (lastBackupDate !== today) {
+                console.log('执行夜间自动备份...');
+                await performAutoBackup(today);
+            }
+        }
+    } catch (error) {
+        console.error('夜间备份检查失败:', error);
     }
 }
