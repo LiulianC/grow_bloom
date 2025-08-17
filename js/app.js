@@ -472,6 +472,8 @@ function fixModalCloseButtons() {
 function closeAllModals() {
     const modalOverlay = document.getElementById('modal-overlay');
     if (modalOverlay) {
+        // 关键修复：移除计时器使用的特殊类，避免与 .hidden 冲突导致遮罩仍显示
+        modalOverlay.classList.remove('show-exit-modal');
         modalOverlay.classList.add('hidden');
     }
     
