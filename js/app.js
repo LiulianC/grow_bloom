@@ -501,34 +501,8 @@ function fixSettingsButton() {
             console.log('设置按钮被点击');
             
             try {
-                // 检查必要的DOM元素
-                const modalOverlay = document.getElementById('modal-overlay');
-                const settingsModal = document.getElementById('settings-modal');
-                
-                if (!modalOverlay || !settingsModal) {
-                    throw new Error('找不到必要的模态框元素');
-                }
-                
-                // 确保所有其他模态框都隐藏
-                document.querySelectorAll('.modal').forEach(modal => {
-                    modal.classList.add('hidden');
-                });
-                
-                // 显示模态框遮罩
-                modalOverlay.classList.remove('hidden');
-                
-                // 显示设置模态框
-                settingsModal.classList.remove('hidden');
-                
-                // 计算数据大小
-                calculateDataSizeForSettings();
-                
-                // 加载当前设置
-                loadCurrentSettingsForApp();
-                
-                // 修复关闭按钮（重要！）
-                fixModalCloseButtons();
-                
+                // 使用SettingsModule的openSettingsModal方法
+                SettingsModule.openSettingsModal();
             } catch (error) {
                 console.error('打开设置失败:', error);
                 

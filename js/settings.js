@@ -202,7 +202,9 @@ const SettingsModule = (() => {
             const vaultStorageInfo = document.getElementById('vault-storage-info');
             if (vaultStorageInfo) {
                 if (vaultAvailable) {
-                    vaultStorageInfo.textContent = '存储方式：数据文件夹已启用';
+                    vaultStorageInfo.textContent = FileVault.isAvailable() ? 
+                        '存储方式：数据文件夹已启用 (OPFS)' : 
+                        '存储方式：数据文件夹已启用 (localStorage)';
                 } else {
                     vaultStorageInfo.textContent = '存储方式：降级到下载模式';
                 }
