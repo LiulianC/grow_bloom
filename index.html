@@ -426,6 +426,23 @@
                     </div>
                 </div>
                 
+                <!-- 数据文件夹管理 -->
+                <div class="settings-section" id="vault-manager-section">
+                    <h4>数据文件夹</h4>
+                    <div class="settings-info">
+                        <p id="vault-storage-info">存储方式：检测中...</p>
+                        <p>文件夹名称：<span id="vault-folder-name">BloomData</span></p>
+                    </div>
+                    <div class="vault-actions">
+                        <button id="refresh-vault-files" class="secondary-btn">
+                            <i class="fas fa-sync"></i> 刷新文件列表
+                        </button>
+                    </div>
+                    <div class="vault-file-list" id="vault-file-list">
+                        <div class="loading-message">加载文件列表中...</div>
+                    </div>
+                </div>
+                
                 <div class="settings-section">
                     <h4>打卡设置</h4>
                     <div class="settings-form">
@@ -572,6 +589,7 @@
     <script src="js/tasks.js"></script>
     <script src="js/statistics.js"></script>
     <script src="js/notifications.js"></script>
+    <script src="js/fileVault.js"></script>
     <script src="js/settings.js"></script>
     <script src="js/redbook.js"></script>
     <script src="js/app.js"></script>
