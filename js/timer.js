@@ -80,9 +80,13 @@ const TimerModule = (() => {
     const stopTimer = () => {
         if (!startTime) return;
         
-        // 显示确认弹窗
-        document.getElementById('modal-overlay').classList.remove('hidden');
-        document.getElementById('exit-confirm-modal').classList.remove('hidden');
+        // 显示确认弹窗 - 添加特殊class标记
+        const modalOverlay = document.getElementById('modal-overlay');
+        const exitModal = document.getElementById('exit-confirm-modal');
+        
+        modalOverlay.classList.add('show-exit-modal'); // 添加这行
+        modalOverlay.classList.remove('hidden');
+        exitModal.classList.remove('hidden');
     };
     
     // 计时完成处理
@@ -197,16 +201,17 @@ const TimerModule = (() => {
         pauseButton.addEventListener('click', pauseTimer);
         stopButton.addEventListener('click', stopTimer);
         
-        // 确认结束学习
+        // 在 js/timer.js 的确认和取消按钮事件中添加
         document.getElementById('confirm-exit').addEventListener('click', () => {
             document.getElementById('modal-overlay').classList.add('hidden');
+            document.getElementById('modal-overlay').classList.remove('show-exit-modal'); // 添加这行
             document.getElementById('exit-confirm-modal').classList.add('hidden');
-            completeTimer(false); // 中断完成
+            completeTimer(false);
         });
-        
-        // 取消结束学习
+
         document.getElementById('cancel-exit').addEventListener('click', () => {
             document.getElementById('modal-overlay').classList.add('hidden');
+            document.getElementById('modal-overlay').classList.remove('show-exit-modal'); // 添加这行
             document.getElementById('exit-confirm-modal').classList.add('hidden');
         });
         
