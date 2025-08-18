@@ -1291,6 +1291,74 @@ body:has(#exit-confirm-modal:not(.hidden)) #modal-overlay,
     padding: 20px;
 }
 
+/* ============================================
+   初衷 样式
+   ============================================ */
+
+        .app-purpose-card {
+            position: relative;
+            padding: 20px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(245,245,255,0.95) 100%);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+
+        .annotation-text {
+            font-size: 13px;
+            color: rgba(58, 58, 114, 0.75); /* 半透明深紫色 */
+            background: rgba(235, 232, 255, 0.6); /* 半透明浅紫背景 */
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-left: 3px solid #8a82ff;
+            line-height: 1.5;
+            backdrop-filter: blur(2px); /* 毛玻璃效果 */
+            animation: gentleGlow 6s infinite alternate;
+        }
+
+        .annotation-icon {
+            margin-right: 5px;
+            vertical-align: middle;
+            font-size: 16px;
+        }
+
+        /* 微光动画 */
+        @keyframes gentleGlow {
+            0% { opacity: 0.95; }
+            50% { opacity: 1; box-shadow: 0 0 8px rgba(138, 130, 255, 0.15); }
+            100% { opacity: 0.95; }
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .annotation-text {
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

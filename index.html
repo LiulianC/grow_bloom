@@ -33,6 +33,17 @@
             </nav>
         </header>
 
+
+        <div class="app-purpose-card">
+            <!-- 半透明注释小字 -->
+            <div class="annotation-text">
+                <span class="annotation-icon">🎈</span>
+                BloomDiary希望通过游戏化机制将生活目标可视化，用即时反馈激活多巴胺系统，帮助用户建立可持续的积极习惯
+            </div>
+        </div>
+
+
+
         <!-- 主内容区 -->
         <main>
             <!-- 每日总览 -->
@@ -90,10 +101,12 @@
                         <!-- 添加任务完成情况展示区域 -->
                         <div class="completed-tasks-overview">
                             <h3>已完成任务</h3>
+                            
                             <div id="overview-tasks-container">
                                 <!-- 这里将显示按类别分组的任务 -->
                             </div>
                         </div>
+                        
                     </div>
                 </div>
             </section>
@@ -157,28 +170,42 @@
                         </div>
                         
                         <div class="tab-content active" data-category="身体健康">
+                            <p class="hint-text">健全的精神寓于健全的身体。</p>
                             <div class="tasks-list" id="tasks-身体健康"></div>
                         </div>
                         
                         <div class="tab-content" data-category="心理健康">
+                            <p class="hint-text">爱自己是浪漫的开始。</p>
                             <div class="tasks-list" id="tasks-心理健康"></div>
                         </div>
                         
                         <div class="tab-content" data-category="灵魂滋养">
+                            <p class="hint-text">“灵魂滋养”这个概念，强调的不是外在成就，而是内在生命的丰盈与安宁。</p>
                             <div class="tasks-list" id="tasks-灵魂滋养"></div>
                         </div>
                         
                         <div class="tab-content" data-category="自我提升">
+                            <p class="hint-text">不积跬步，无以至千里；不积小流，无以成江海。</p>
                             <div class="tasks-list" id="tasks-自我提升"></div>
                         </div>
                         
                         <div class="tab-content" data-category="广结善缘">
+                            <p class="hint-text">没有人是一座孤岛，能够自全；每个人都是大陆的一片，整体的一部分。</p>
                             <div class="tasks-list" id="tasks-广结善缘"></div>
                         </div>
                         
                         <div class="tab-content" data-category="custom">
                             <div class="custom-categories" id="custom-categories"></div>
                         </div>
+
+                        <style>
+                            .hint-text {
+                                font-size: 12px;  /* 调整字号 */
+                                color: #666;      /* 灰色更显次要 */
+                                margin: 5px 0;    /* 调整间距 */
+                            }
+                        </style>
+
                     </div>
                 </div>
             </section>
@@ -295,6 +322,7 @@
                 </div>
             </section>
         </main>
+        
 
         <!-- 底部导航 -->
         <footer>
@@ -639,4 +667,5 @@
         }
     </script>
 </body>
+
 </html>
