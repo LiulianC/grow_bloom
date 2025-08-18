@@ -1331,7 +1331,7 @@ async function performAutoBackup(todayString) {
             version: "1.0"
         };
         
-        const fileName = `latest_data_${todayString}.json`;
+        const fileName = `latest_data.json`;
         
         // 尝试保存到FileVault
         const saved = await FileVault.saveJSON(fileName, backupData);
@@ -1340,9 +1340,6 @@ async function performAutoBackup(todayString) {
         StorageService.updateSettings({
             lastBackupDate: todayString
         });
-        
-        // 清理旧备份记录（这里只是更新设置，实际文件清理需要用户手动操作）
-        cleanupOldBackups();
         
         // 显示成功通知
         if (saved) {
@@ -1375,43 +1372,6 @@ function downloadJSON(data, fileName) {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     }, 100);
-}
-
-// 清理旧备份记录
-function cleanupOldBackups() {
-    try {
-        // 由于浏览器环境的限制，我们无法直接删除用户下载的文件
-        // 这里只是记录清理信息，提醒用户可以手动清理旧文件
-        const settings = StorageService.getSettings();
-        const backupHistory = settings.backupHistory || [];
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        
-        // 过滤出最近7天的备份记录
-        const recentBackups = backupHistory.filter(backup => {
-            const backupDate = new Date(backup.date);
-            return backupDate >= sevenDaysAgo;
-        });
-        
-        // 添加今天的备份记录
-        const today = new Date().toISOString().split('T')[0];
-        if (!recentBackups.some(backup => backup.date === today)) {
-            recentBackups.push({
-                date: today,
-                fileName: `bloom_auto_backup_${today}.json`
-            });
-        }
-        
-        // 更新备份历史记录
-        StorageService.updateSettings({
-            backupHistory: recentBackups
-        });
-        
-        console.log('备份历史记录已更新，保留最近7天的记录');
-        
-    } catch (error) {
-        console.error('清理备份记录时出错:', error);
-    }
 }
 
 // 启动每日23:00备份调度器
