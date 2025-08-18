@@ -2,6 +2,140 @@
  * 设置模块 - 管理应用设置和数据
  */
 const SettingsModule = (() => {
+    // ===== 新增：在 WebView/APK 环境中替代 prompt/confirm 的通用模态对话框 =====
+    const openInlineConfirm = ({ title = '确认操作', message = '确定继续吗？', confirmText = '确认', cancelText = '取消' } = {}) => {
+        return new Promise(resolve => {
+            const overlay = document.getElementById('modal-overlay');
+            const settingsModal = document.getElementById('settings-modal');
+            // 隐藏设置弹窗，避免双层滚动
+            const restoreSettings = settingsModal && !settingsModal.classList.contains('hidden');
+            if (overlay) overlay.classList.remove('hidden');
+            if (restoreSettings) settingsModal.classList.add('hidden');
+
+            const dlg = document.createElement('div');
+            dlg.className = 'modal';
+            dlg.innerHTML = `
+                <div class="modal-header">
+                    <h3>${title}</h3>
+                    <button class="close-modal">×</button>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: 16px;">${message}</p>
+                    <div class="form-actions">
+                        <button class="danger-btn" data-confirm="true">${confirmText}</button>
+                        <button class="secondary-btn" data-cancel="true">${cancelText}</button>
+                    </div>
+                </div>
+            `;
+            overlay.appendChild(dlg);
+
+            const cleanup = () => {
+                if (overlay && dlg && dlg.parentNode === overlay) {
+                    overlay.removeChild(dlg);
+                }
+                if (restoreSettings) {
+                    settingsModal.classList.remove('hidden');
+                } else if (!document.querySelector('#modal-overlay .modal:not(#settings-modal)')) {
+                    // 如果没有其他自建对话框，且设置面板本就未显示，则关闭遮罩
+                    const anyVisible = document.querySelector('.modal:not(.hidden)');
+                    if (!anyVisible) overlay.classList.add('hidden');
+                }
+            };
+
+            dlg.querySelector('.close-modal').addEventListener('click', () => {
+                cleanup();
+                resolve(false);
+            });
+            dlg.querySelector('[data-cancel]').addEventListener('click', () => {
+                cleanup();
+                resolve(false);
+            });
+            dlg.querySelector('[data-confirm]').addEventListener('click', () => {
+                cleanup();
+                resolve(true);
+            });
+        });
+    };
+
+    const openInlinePrompt = ({ title = '输入', label = '请输入内容', defaultValue = '', placeholder = '', confirmText = '确定', cancelText = '取消', validator } = {}) => {
+        return new Promise(resolve => {
+            const overlay = document.getElementById('modal-overlay');
+            const settingsModal = document.getElementById('settings-modal');
+            const restoreSettings = settingsModal && !settingsModal.classList.contains('hidden');
+            if (overlay) overlay.classList.remove('hidden');
+            if (restoreSettings) settingsModal.classList.add('hidden');
+
+            const dlg = document.createElement('div');
+            dlg.className = 'modal';
+            dlg.innerHTML = `
+                <div class="modal-header">
+                    <h3>${title}</h3>
+                    <button class="close-modal">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>${label}</label>
+                        <input type="text" id="inline-prompt-input" value="${defaultValue.replace(/"/g, '&quot;')}" placeholder="${placeholder.replace(/"/g, '&quot;')}" />
+                        <div id="inline-prompt-error" class="setting-desc" style="color:#ef6c75;margin-top:8px;display:none;"></div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary-btn" data-confirm="true">${confirmText}</button>
+                        <button class="secondary-btn" data-cancel="true">${cancelText}</button>
+                    </div>
+                </div>
+            `;
+            overlay.appendChild(dlg);
+
+            const input = dlg.querySelector('#inline-prompt-input');
+            const error = dlg.querySelector('#inline-prompt-error');
+
+            const cleanup = () => {
+                if (overlay && dlg && dlg.parentNode === overlay) {
+                    overlay.removeChild(dlg);
+                }
+                if (restoreSettings) {
+                    settingsModal.classList.remove('hidden');
+                } else if (!document.querySelector('#modal-overlay .modal:not(#settings-modal)')) {
+                    const anyVisible = document.querySelector('.modal:not(.hidden)');
+                    if (!anyVisible) overlay.classList.add('hidden');
+                }
+            };
+
+            const tryConfirm = () => {
+                const value = (input.value || '').trim();
+                if (validator) {
+                    const msg = validator(value);
+                    if (msg) {
+                        error.textContent = msg;
+                        error.style.display = 'block';
+                        return false;
+                    }
+                }
+                cleanup();
+                resolve(value);
+                return true;
+            };
+
+            dlg.querySelector('.close-modal').addEventListener('click', () => { cleanup(); resolve(null); });
+            dlg.querySelector('[data-cancel]').addEventListener('click', () => { cleanup(); resolve(null); });
+            dlg.querySelector('[data-confirm]').addEventListener('click', () => { tryConfirm(); });
+
+            // 回车提交，ESC 取消
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    tryConfirm();
+                } else if (e.key === 'Escape') {
+                    cleanup();
+                    resolve(null);
+                }
+            });
+
+            setTimeout(() => input && input.focus(), 0);
+        });
+    };
+    // ===== 新增结束 =====
+
     const initialize = () => {
         // 设置按钮点击事件
         const settingsBtn = document.getElementById('settings-btn');
@@ -258,7 +392,7 @@ const SettingsModule = (() => {
                 return;
             }
             
-            // 渲染文件列表
+            // 渲染文件列表（保持内联 onclick 以减少改动）
             const fileListHTML = files.map(file => `
                 <div class="vault-file-item">
                     <div class="vault-file-info">
@@ -305,19 +439,28 @@ const SettingsModule = (() => {
         }
     };
     
-    // 重命名文件保险库文件
+    // 重命名文件保险库文件（改为使用内置模态，兼容 APK/WebView）
     const renameVaultFile = async (oldName) => {
         try {
-            const newName = prompt('请输入新的文件名:', oldName);
-            if (!newName || newName === oldName) {
-                return;
-            }
-            
-            // 验证文件名
-            if (!newName.endsWith('.json')) {
-                throw new Error('文件名必须以.json结尾');
-            }
-            
+            const newName = await openInlinePrompt({
+                title: '重命名文件',
+                label: '新的文件名',
+                defaultValue: oldName,
+                placeholder: '例如：backup_2025-08-18.json',
+                confirmText: '重命名',
+                cancelText: '取消',
+                validator: (val) => {
+                    if (!val) return '文件名不能为空';
+                    if (!val.toLowerCase().endsWith('.json')) return '文件名必须以 .json 结尾';
+                    if (val === oldName) return '文件名未改变';
+                    // 简单非法字符检查
+                    if (/[\\/:*?"<>|]/.test(val)) return '文件名包含非法字符 \\ / : * ? " < > |';
+                    return '';
+                }
+            });
+
+            if (!newName) return; // 用户取消
+
             // 在APK环境中，OPFS重命名可能失败，使用copy+delete fallback
             const success = await FileVault.renameFile(oldName, newName);
             if (success) {
@@ -356,13 +499,16 @@ const SettingsModule = (() => {
         }
     };
     
-    // 删除文件保险库文件
+    // 删除文件保险库文件（改为使用内置模态，兼容 APK/WebView）
     const deleteVaultFile = async (fileName) => {
         try {
-            const confirmed = confirm(`确定要删除文件 "${fileName}" 吗？\n此操作无法撤销。`);
-            if (!confirmed) {
-                return;
-            }
+            const confirmed = await openInlineConfirm({
+                title: '删除文件',
+                message: `确定要删除文件 "${fileName}" 吗？此操作无法撤销。`,
+                confirmText: '确认删除',
+                cancelText: '取消'
+            });
+            if (!confirmed) return;
             
             const success = await FileVault.deleteFile(fileName);
             if (success) {
@@ -376,7 +522,7 @@ const SettingsModule = (() => {
         } catch (error) {
             console.error('删除文件失败:', error);
             // 友好的错误消息，特别说明APK环境限制
-            const errorMessage = error.message.includes('NotAllowedError') || error.message.includes('remove') 
+            const errorMessage = error.message && (error.message.includes('NotAllowedError') || error.message.includes('remove')) 
                 ? `无法删除文件 ${fileName}，这在Android WebView环境中是已知限制。` 
                 : `删除操作失败: ${error.message}`;
             NotificationsModule.showNotification('删除失败', errorMessage);

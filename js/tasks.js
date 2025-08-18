@@ -178,6 +178,13 @@ const TasksModule = (() => {
                     }, 50);
                 });
             }
+
+            // 关键修复：克隆表单会移除先前渲染的模板标签，需在克隆后立即重新加载一次模板
+            try {
+                loadTaskTemplates();
+            } catch (e) {
+                console.warn('重新加载模板失败:', e);
+            }
         }
     };
 

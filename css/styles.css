@@ -1295,47 +1295,70 @@ body:has(#exit-confirm-modal:not(.hidden)) #modal-overlay,
    初衷 样式
    ============================================ */
 
-        .app-purpose-card {
-            position: relative;
-            padding: 20px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(245,245,255,0.95) 100%);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        }
+.app-purpose-card {
+    position: relative;
+    padding: 20px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(245,245,255,0.95) 100%);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
 
+.annotation-text {
+    font-size: 13px;
+    color: rgba(58, 58, 114, 0.75);
+    background: rgba(235, 232, 255, 0.6);
+    padding: 10px 15px;
+    border-radius: 8px;
+    border-left: 3px solid #8a82ff;
+    line-height: 1.5;
+    backdrop-filter: blur(2px);
+    animation: gentleGlow 6s infinite alternate;
+}
 
-        .annotation-text {
-            font-size: 13px;
-            color: rgba(58, 58, 114, 0.75); /* 半透明深紫色 */
-            background: rgba(235, 232, 255, 0.6); /* 半透明浅紫背景 */
-            padding: 10px 15px;
-            border-radius: 8px;
-            border-left: 3px solid #8a82ff;
-            line-height: 1.5;
-            backdrop-filter: blur(2px); /* 毛玻璃效果 */
-            animation: gentleGlow 6s infinite alternate;
-        }
+.annotation-icon {
+    margin-right: 5px;
+    vertical-align: middle;
+    font-size: 16px;
+}
 
-        .annotation-icon {
-            margin-right: 5px;
-            vertical-align: middle;
-            font-size: 16px;
-        }
+/* 微光动画 */
+@keyframes gentleGlow {
+    0% { opacity: 0.95; }
+    50% { opacity: 1; box-shadow: 0 0 8px rgba(138, 130, 255, 0.15); }
+    100% { opacity: 0.95; }
+}
 
-        /* 微光动画 */
-        @keyframes gentleGlow {
-            0% { opacity: 0.95; }
-            50% { opacity: 1; box-shadow: 0 0 8px rgba(138, 130, 255, 0.15); }
-            100% { opacity: 0.95; }
-        }
+/* 1) 使用变量控制微光颜色，方便在深色模式下覆盖 */
+:root {
+    --purpose-glow-color: rgba(138, 130, 255, 0.15);
+}
 
-        /* 响应式调整 */
-        @media (max-width: 768px) {
-            .annotation-text {
-                font-size: 12px;
-                padding: 8px 12px;
-            }
-        }
+/* 2) 深色模式下覆盖变量与背景/阴影 */
+body.dark-mode {
+    --purpose-glow-color: rgba(165, 148, 249, 0.3);
+}
+
+body.dark-mode .app-purpose-card {
+    background: linear-gradient(135deg, rgba(30,30,40,0.9) 0%, rgba(45,45,60,0.95) 100%) !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+}
+
+/* 让注释区在深色模式下更易读（可按需微调） */
+body.dark-mode .annotation-text {
+    background: rgba(35, 35, 55, 0.6) !important;
+    border-left-color: #a594f9 !important;
+    color: rgba(220, 220, 245, 0.85) !important;
+}
+
+/* 3) 用变量驱动的 keyframes，避免在 @media 中覆盖失败的问题 */
+@keyframes gentleGlow {
+    0% { opacity: 0.95; }
+    50% { 
+        opacity: 1; 
+        box-shadow: 0 0 8px var(--purpose-glow-color);
+    }
+    100% { opacity: 0.95; }
+}
 
 
 
