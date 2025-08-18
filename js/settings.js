@@ -87,22 +87,6 @@ const SettingsModule = (() => {
             });
         }
         
-        // 手动备份按钮
-        const manualBackupBtn = document.getElementById('manual-backup');
-        if (manualBackupBtn) {
-            const newBackupBtn = manualBackupBtn.cloneNode(true);
-            manualBackupBtn.parentNode.replaceChild(newBackupBtn, manualBackupBtn);
-            
-            newBackupBtn.addEventListener('click', function() {
-                try {
-                    performManualBackup();
-                } catch (error) {
-                    console.error('手动备份失败:', error);
-                    NotificationsModule.showNotification('备份失败', error.message);
-                }
-            });
-        }
-        
         // 自动备份开关
         const autoBackupToggle = document.getElementById('auto-backup-toggle');
         if (autoBackupToggle) {
@@ -334,16 +318,41 @@ const SettingsModule = (() => {
                 throw new Error('文件名必须以.json结尾');
             }
             
+            // 在APK环境中，OPFS重命名可能失败，使用copy+delete fallback
             const success = await FileVault.renameFile(oldName, newName);
             if (success) {
                 NotificationsModule.showNotification('重命名成功', `文件已重命名为 ${newName}`);
                 await loadVaultFileList();
             } else {
-                throw new Error('重命名操作失败');
+                // 如果直接重命名失败，尝试手动copy+delete fallback
+                console.log('直接重命名失败，尝试copy+delete fallback...');
+                
+                // 读取原文件内容
+                const content = await FileVault.readFile(oldName);
+                if (!content) {
+                    throw new Error('无法读取原文件内容');
+                }
+                
+                // 保存为新文件
+                const saved = await FileVault.saveJSON(newName, JSON.parse(content));
+                if (!saved) {
+                    throw new Error('保存新文件失败');
+                }
+                
+                // 删除原文件
+                const deleted = await FileVault.deleteFile(oldName);
+                if (!deleted) {
+                    console.warn('删除原文件失败，但新文件已创建');
+                    NotificationsModule.showNotification('重命名部分成功', `新文件 ${newName} 已创建，但原文件 ${oldName} 删除失败，请手动删除`);
+                } else {
+                    NotificationsModule.showNotification('重命名成功', `文件已重命名为 ${newName}`);
+                }
+                
+                await loadVaultFileList();
             }
         } catch (error) {
             console.error('重命名文件失败:', error);
-            NotificationsModule.showNotification('重命名失败', error.message);
+            NotificationsModule.showNotification('重命名失败', `重命名操作失败: ${error.message}`);
         }
     };
     
@@ -360,11 +369,17 @@ const SettingsModule = (() => {
                 NotificationsModule.showNotification('删除成功', `文件 ${fileName} 已删除`);
                 await loadVaultFileList();
             } else {
-                throw new Error('删除操作失败');
+                // 在APK环境中，删除可能失败，给用户友好提示
+                NotificationsModule.showNotification('删除失败', `由于环境限制，无法删除文件 ${fileName}。这在某些Android WebView环境中是正常现象。`);
+                console.warn(`删除文件失败: ${fileName} - 可能是APK环境限制`);
             }
         } catch (error) {
             console.error('删除文件失败:', error);
-            NotificationsModule.showNotification('删除失败', error.message);
+            // 友好的错误消息，特别说明APK环境限制
+            const errorMessage = error.message.includes('NotAllowedError') || error.message.includes('remove') 
+                ? `无法删除文件 ${fileName}，这在Android WebView环境中是已知限制。` 
+                : `删除操作失败: ${error.message}`;
+            NotificationsModule.showNotification('删除失败', errorMessage);
         }
     };
 
@@ -571,7 +586,7 @@ const SettingsModule = (() => {
     // 清除所有数据
     const clearAllData = () => {
         try {
-            // 清除所有相关的localStorage条目
+            // 清除所有相关的localStorage条目 (只清除浏览器缓存数据，不删除BloomData文件夹中的文件)
             for(let i = localStorage.length - 1; i >= 0; i--) {
                 const key = localStorage.key(i);
                 if (key && key.startsWith('bloom_')) {
@@ -1070,58 +1085,6 @@ const SettingsModule = (() => {
         localStorage.setItem(StorageService.KEYS.SETTINGS, JSON.stringify(mergedSettings));
         localStorage.setItem('bloom_redbook_entries', JSON.stringify(mergedRedbookEntries));
         localStorage.setItem('bloom_redbook_settings', JSON.stringify(mergedRedbookSettings));
-    };
-    
-    // 执行手动备份
-    const performManualBackup = () => {
-        try {
-            const backupData = gatherAllData();
-            const fileName = `bloom_manual_backup_${getTodayString()}.json`;
-            
-            downloadJSON(backupData, fileName);
-            
-            NotificationsModule.showNotification('手动备份完成', `已生成备份文件: ${fileName}`);
-            
-        } catch (error) {
-            console.error('手动备份失败:', error);
-            NotificationsModule.showNotification('备份失败', `手动备份时出错: ${error.message}`);
-        }
-    };
-    
-    // 收集所有数据
-    const gatherAllData = () => {
-        return {
-            dailyData: StorageService.getAllData(),
-            tasks: StorageService.getTaskTemplates(),
-            customCategories: StorageService.getCustomCategories(),
-            settings: StorageService.getSettings(),
-            exportDate: new Date().toISOString(),
-            version: "1.0"
-        };
-    };
-    
-    // 通用JSON下载函数
-    const downloadJSON = (data, fileName) => {
-        const jsonData = JSON.stringify(data, null, 2);
-        const blob = new Blob([jsonData], {type: 'application/json'});
-        const url = URL.createObjectURL(blob);
-        
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        
-        setTimeout(() => {
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }, 100);
-    };
-    
-    // 获取今日日期字符串
-    const getTodayString = () => {
-        const now = new Date();
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     };
     
     // 公开API
