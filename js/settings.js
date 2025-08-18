@@ -730,26 +730,62 @@ const SettingsModule = (() => {
     };
     
     // 清除所有数据
-    const clearAllData = () => {
+    const clearAllData = async () => {
         try {
-            // 清除所有相关的localStorage条目 (只清除浏览器缓存数据，不删除BloomData文件夹中的文件)
-            for(let i = localStorage.length - 1; i >= 0; i--) {
+            // 1) 清除浏览器本地缓存数据（仅清除以 bloom_ 开头的键，不动 BloomData 文件夹中的文件）
+            for (let i = localStorage.length - 1; i >= 0; i--) {
                 const key = localStorage.key(i);
                 if (key && key.startsWith('bloom_')) {
                     localStorage.removeItem(key);
                 }
             }
-            
-            // 重新初始化存储
-            StorageService.initialize();
-            
-            // 刷新页面
-            NotificationsModule.showNotification('数据已清除', '应用数据已成功清除，即将刷新页面');
-            
+            // 兼容旧版本或其他存储位置（若存在同名 sessionStorage 键也清理）
+            if (typeof sessionStorage !== 'undefined') {
+                for (let i = sessionStorage.length - 1; i >= 0; i--) {
+                    const key = sessionStorage.key(i);
+                    if (key && key.startsWith('bloom_')) {
+                        sessionStorage.removeItem(key);
+                    }
+                }
+            }
+
+            // 2) 立即刷新内存与界面（避免用户在刷新前仍看到旧图表）
+            // 重新初始化 StorageService（会重建“今日数据”的空壳结构）
+            if (typeof StorageService !== 'undefined' && StorageService.initialize) {
+                StorageService.initialize();
+            }
+
+            // 重置统计页面：优先显示“今日收入”饼图，并置空数据，隐藏其他图表
+            try {
+                const daily = document.getElementById('daily-chart');
+                const period = document.getElementById('period-chart');
+                const sleep = document.getElementById('sleep-chart');
+                const wakeup = document.getElementById('wakeup-chart');
+
+                if (daily) daily.style.display = 'block';
+                if (period) period.style.display = 'none';
+                if (sleep) sleep.style.display = 'none';
+                if (wakeup) wakeup.style.display = 'none';
+
+                if (typeof StatisticsModule !== 'undefined' && StatisticsModule.updateDailyChart) {
+                    // 此时 StorageService 中已无历史数据，updateDailyChart 会渲染为 0 值
+                    StatisticsModule.updateDailyChart();
+                }
+            } catch (e) {
+                console.warn('重置统计图表失败（可忽略）:', e);
+            }
+
+            // 同步刷新首页总览数值
+            if (typeof updateDailyOverview === 'function') {
+                updateDailyOverview();
+            }
+
+            // 3) 通知并刷新页面，确保所有模块完全回到干净状态
+            NotificationsModule.showNotification('数据已清除', '已清除应用缓存数据（不包含 BloomData 文件夹文件），页面即将刷新');
+
             setTimeout(() => {
                 window.location.reload();
-            }, 1500);
-            
+            }, 800);
         } catch (error) {
             console.error('清除数据失败:', error);
             NotificationsModule.showNotification('清除失败', `清除数据时出错: ${error.message}`);

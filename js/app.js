@@ -968,43 +968,33 @@ function fixStatisticsModule() {
         });
     });
     
-    // 修复导出数据按钮
+    // 修复导出数据按钮（优先调用 StatisticsModule.exportCSV，避免PC上误触系统分享）
     const exportDataBtn = document.getElementById('export-data');
     if (exportDataBtn) {
         const newExportDataBtn = exportDataBtn.cloneNode(true);
         exportDataBtn.parentNode.replaceChild(newExportDataBtn, exportDataBtn);
         
-        newExportDataBtn.addEventListener('click', function() {
+        newExportDataBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
             console.log('导出数据按钮被点击');
-            
-            if (typeof StorageService !== 'undefined' && StorageService.exportDataToCSV) {
+            if (typeof StatisticsModule !== 'undefined' && typeof StatisticsModule.exportCSV === 'function') {
+                await StatisticsModule.exportCSV();
+            } else {
+                // 后备：维持原有下载逻辑，防止意外
                 try {
-                    // 生成CSV数据
                     const csvData = StorageService.exportDataToCSV();
-                    
-                    // 创建Blob对象
                     const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-                    
-                    // 创建下载链接
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
-                    
-                    // 设置下载属性
                     const fileName = `bloom_diary_export_${StorageService.getTodayString()}.csv`;
                     link.setAttribute('href', url);
                     link.setAttribute('download', fileName);
-                    
-                    // 添加到文档并模拟点击
                     document.body.appendChild(link);
                     link.click();
-                    
-                    // 清理
                     setTimeout(function() {
                         document.body.removeChild(link);
                         URL.revokeObjectURL(url);
                     }, 100);
-                    
-                    // 显示通知
                     if (typeof NotificationsModule !== 'undefined') {
                         NotificationsModule.showNotification('导出成功', `数据已成功导出为 ${fileName}`);
                     }

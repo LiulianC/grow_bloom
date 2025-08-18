@@ -6,7 +6,89 @@ const StatisticsModule = (() => {
     let dailyChart;
     let periodChart;
     let sleepChart;
-    
+
+    // 新增：统一的 CSV 导出/分享逻辑（移动端可分享，桌面端仅下载；APK/WebView优先保存到数据文件夹）
+    const exportCSV = async () => {
+        try {
+            console.log('正在准备导出CSV数据...');
+            const csvData = StorageService.exportDataToCSV();
+            if (!csvData) {
+                throw new Error('CSV数据生成失败');
+            }
+
+            const fileName = `bloom_diary_export_${StorageService.getTodayString()}.csv`;
+            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+
+            const ua = (navigator.userAgent || '').toLowerCase();
+            const isMobile = /android|iphone|ipad|ipod|harmonyos|hw-|miui|honor/.test(ua);
+
+            // 仅在移动端且明确支持文件分享时，才调起系统分享
+            try {
+                const canShareFiles = (() => {
+                    if (!isMobile) return false; // 桌面端一律不走分享，避免PC浏览器弹系统分享
+                    if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') return false;
+                    if (typeof navigator.canShare !== 'function') return false;
+                    try {
+                        const testFile = new File([blob], fileName, { type: 'text/csv' });
+                        return navigator.canShare({ files: [testFile] }) === true;
+                    } catch (_) {
+                        return false;
+                    }
+                })();
+
+                if (canShareFiles) {
+                    const file = new File([blob], fileName, { type: 'text/csv' });
+                    await navigator.share({
+                        files: [file],
+                        title: '成长小账本',
+                        text: '导出的数据文件（CSV）'
+                    });
+                    NotificationsModule?.showNotification('已分享', '已通过系统分享面板发送文件');
+                    return;
+                }
+            } catch (shareErr) {
+                console.warn('系统分享失败或不可用，转用其他方式:', shareErr);
+            }
+
+            // 在 APK/WebView 中优先保存到数据文件夹，便于用户在设置 -> 数据文件夹中查看/管理
+            try {
+                if (typeof FileVault !== 'undefined') {
+                    if (typeof FileVault.saveText === 'function') {
+                        const saved = await FileVault.saveText(fileName, csvData, 'text/csv');
+                        if (saved) {
+                            NotificationsModule?.showNotification('导出成功', `已保存到数据文件夹: ${fileName}`);
+                            return;
+                        }
+                    } else if (typeof FileVault.saveBlob === 'function') {
+                        const saved = await FileVault.saveBlob(fileName, blob);
+                        if (saved) {
+                            NotificationsModule?.showNotification('导出成功', `已保存到数据文件夹: ${fileName}`);
+                            return;
+                        }
+                    }
+                }
+            } catch (vaultErr) {
+                console.warn('保存到数据文件夹失败，回退为下载:', vaultErr);
+            }
+
+            // 回退为浏览器下载（桌面优先用此方式）
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 100);
+            NotificationsModule?.showNotification('导出完成', `文件已下载: ${fileName}`);
+        } catch (error) {
+            console.error('导出CSV失败:', error);
+            NotificationsModule?.showNotification('导出失败', `导出CSV时出错: ${error.message}`);
+        }
+    };
+
     const setupChartTabs = () => {
         const chartTabsContainer = document.querySelector('.chart-tabs');
         if (!chartTabsContainer) return;
@@ -800,47 +882,9 @@ const StatisticsModule = (() => {
         exportBtn.parentNode.replaceChild(newExportBtn, exportBtn);
         
         // 添加新的事件监听器
-        newExportBtn.addEventListener('click', function(event) {
+        newExportBtn.addEventListener('click', async function(event) {
             event.preventDefault();
-            console.log('正在导出CSV数据...');
-            
-            try {
-                // 生成CSV数据
-                const csvData = StorageService.exportDataToCSV();
-                
-                if (!csvData) {
-                    throw new Error('CSV数据生成失败');
-                }
-                
-                // 创建Blob对象
-                const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-                
-                // 创建下载链接
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                
-                // 设置下载属性
-                const fileName = `bloom_diary_export_${StorageService.getTodayString()}.csv`;
-                link.setAttribute('href', url);
-                link.setAttribute('download', fileName);
-                
-                // 添加到文档并模拟点击
-                document.body.appendChild(link);
-                link.click();
-                
-                // 清理
-                setTimeout(() => {
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                }, 100);
-                
-                // 显示通知
-                NotificationsModule.showNotification('导出成功', `数据已成功导出为 ${fileName}`);
-                
-            } catch (error) {
-                console.error('导出CSV失败:', error);
-                NotificationsModule.showNotification('导出失败', `导出CSV时出错: ${error.message}`);
-            }
+            await exportCSV();
         });
         
         console.log('CSV导出按钮事件已绑定');
@@ -1071,6 +1115,7 @@ const StatisticsModule = (() => {
         updateDailyChart,
         updatePeriodChart,
         updateSleepChart,
-        updateWakeupChart
+        updateWakeupChart,
+        exportCSV // 新增：对外导出方法
     };
 })();
