@@ -820,7 +820,29 @@ function fixTasksModule() {
             e.stopPropagation();
             console.log('添加任务按钮被点击');
             
-            // 加载任务模板
+            // 新增：根据当前任务页激活的标签预选模态框中的任务类别
+            try {
+                const activeTabBtn = document.querySelector('#tasks-section .tab-btn.active');
+                const activeCategory = activeTabBtn ? activeTabBtn.dataset.category : '';
+                if (activeCategory && activeCategory !== 'custom') {
+                    const categorySelect = document.getElementById('task-category');
+                    if (categorySelect) {
+                        // 如果选项中没有该类别（例如自定义类别），则补充一个再选中
+                        const hasOption = Array.from(categorySelect.options).some(opt => opt.value === activeCategory);
+                        if (!hasOption) {
+                            const opt = document.createElement('option');
+                            opt.value = activeCategory;
+                            opt.textContent = activeCategory;
+                            categorySelect.appendChild(opt);
+                        }
+                        categorySelect.value = activeCategory;
+                    }
+                }
+            } catch (err) {
+                console.warn('预选任务类别失败:', err);
+            }
+            
+            // 加载任务模板（会基于上面预选的类别加载）
             if (typeof TasksModule !== 'undefined' && TasksModule.loadTaskTemplates) {
                 TasksModule.loadTaskTemplates();
             }

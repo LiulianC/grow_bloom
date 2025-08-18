@@ -85,9 +85,35 @@ const TasksModule = (() => {
         
         const addTaskForm = document.getElementById('add-task-form');
         if (addTaskForm) {
+            // 记录当前选择的类别与任务名（由外部预选或用户选择）
+            const prevCategoryEl = addTaskForm.querySelector('#task-category');
+            const prevTaskNameEl = addTaskForm.querySelector('#task-name');
+            const prevCategory = prevCategoryEl ? prevCategoryEl.value : null;
+            const prevTaskName = prevTaskNameEl ? prevTaskNameEl.value : '';
+
+            // 克隆并替换以清理旧事件
             const newForm = addTaskForm.cloneNode(true);
             addTaskForm.parentNode.replaceChild(newForm, addTaskForm);
-            
+
+            // 恢复之前的类别与任务名
+            const restoredCategorySelect = newForm.querySelector('#task-category');
+            const restoredTaskNameInput = newForm.querySelector('#task-name');
+
+            if (restoredCategorySelect && prevCategory) {
+                const hasOption = Array.from(restoredCategorySelect.options).some(opt => opt.value === prevCategory);
+                if (!hasOption) {
+                    const opt = document.createElement('option');
+                    opt.value = prevCategory;
+                    opt.textContent = prevCategory;
+                    restoredCategorySelect.appendChild(opt);
+                }
+                restoredCategorySelect.value = prevCategory;
+            }
+            if (restoredTaskNameInput && prevTaskName) {
+                restoredTaskNameInput.value = prevTaskName;
+            }
+
+            // 绑定提交事件
             newForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -179,7 +205,7 @@ const TasksModule = (() => {
                 });
             }
 
-            // 关键修复：克隆表单会移除先前渲染的模板标签，需在克隆后立即重新加载一次模板
+            // 在克隆后根据恢复的类别刷新模板，防止又回到“身体健康”
             try {
                 loadTaskTemplates();
             } catch (e) {
