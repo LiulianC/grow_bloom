@@ -10,150 +10,99 @@ const StatisticsModule = (() => {
     // 新增：统一的 CSV 导出/分享逻辑（移动端可分享，桌面端仅下载；APK/WebView优先保存到数据文件夹）
     const exportCSV = async () => {
         try {
-            console.log('正在准备导出CSV数据...');
             const csvData = StorageService.exportDataToCSV();
-            if (!csvData) {
-                throw new Error('CSV数据生成失败');
-            }
+            if (!csvData) throw new Error('CSV数据生成失败');
 
             const fileName = `bloom_diary_export_${StorageService.getTodayString()}.csv`;
             const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
 
-            // 增强的移动端检测逻辑
             const ua = (navigator.userAgent || '').toLowerCase();
-            const isMobile = (() => {
-                // 检测移动设备特征
-                const mobilePatterns = [
-                    /android/i,
-                    /iphone|ipod/i,
-                    /ipad/i,
-                    /mobile/i,
-                    /blackberry/i,
-                    /webos/i,
-                    /windows phone/i,
-                    /harmonyos/i,
-                    /hw-|huawei/i,
-                    /miui|xiaomi/i,
-                    /honor/i,
-                    /oppo|oneplus/i,
-                    /vivo/i,
-                    /samsung.*mobile/i
-                ];
-                
-                // 检测触摸屏支持
-                const hasTouchscreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-                
-                // 检测屏幕尺寸（移动端通常较小）
-                const isSmallScreen = window.screen.width <= 768 || window.screen.height <= 768;
-                
-                // 检测用户代理字符串
-                const matchesMobileUA = mobilePatterns.some(pattern => pattern.test(ua));
-                
-                // 综合判断：用户代理匹配且有触摸屏支持，或者是小屏幕设备
-                return matchesMobileUA && (hasTouchscreen || isSmallScreen);
-            })();
-            
-            console.log(`设备检测结果 - 移动端: ${isMobile}, UA: ${ua.substring(0, 50)}...`);
+            const isMobile = /android|iphone|ipad|ipod|harmonyos|huawei|honor|miui|oppo|vivo|oneplus|samsung/i.test(ua);
 
-            // 仅在移动端且明确支持文件分享时，才调起系统分享
+            if (!isMobile) {
+                // 桌面端：直接下载，更直观
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 100);
+                NotificationsModule?.showNotification('导出完成', `文件已下载: ${fileName}`);
+                return;
+            }
+
+            // 移动端（含APK/WebView）：先保存到数据文件夹，再尝试调起系统分享
+            let saved = false;
             try {
-                const canShareFiles = (() => {
-                    if (!isMobile) {
-                        console.log('桌面端设备，跳过系统分享，直接使用下载模式');
-                        return false;
-                    }
-                    
-                    if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
-                        console.log('设备不支持 Web Share API');
-                        return false;
-                    }
-                    
-                    if (typeof navigator.canShare !== 'function') {
-                        console.log('设备不支持 canShare 检测，尝试直接分享');
-                        return true; // 某些移动端可能不支持 canShare 但支持 share
-                    }
-                    
-                    try {
-                        const testFile = new File([blob], fileName, { type: 'text/csv' });
-                        const canShare = navigator.canShare({ files: [testFile] });
-                        console.log(`文件分享支持检测结果: ${canShare}`);
-                        return canShare === true;
-                    } catch (error) {
-                        console.warn('canShare 检测失败:', error);
-                        return true; // 检测失败时尝试分享
-                    }
-                })();
+                if (typeof FileVault !== 'undefined' && typeof FileVault.saveText === 'function') {
+                    saved = await FileVault.saveText(fileName, csvData, 'text/csv');
+                }
+            } catch (e) {
+                console.warn('保存到数据文件夹失败，将尝试直接分享或下载:', e);
+            }
 
-                if (canShareFiles) {
-                    console.log('尝试使用系统分享功能...');
-                    const file = new File([blob], fileName, { type: 'text/csv' });
-                    await navigator.share({
-                        files: [file],
-                        title: '成长小账本数据导出',
-                        text: `导出的成长记录数据文件（${fileName}）`
-                    });
-                    NotificationsModule?.showNotification('分享成功', '已通过系统分享面板发送文件，您可以选择微信、QQ等应用进行分享');
+            // 无论保存是否成功，都尝试打开系统分享（以满足“保存->分享”的流程）
+            let shared = false;
+            try {
+                // Web Share API（部分安卓浏览器/系统WebView支持，能唤起微信）
+                if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+                    let fileForShare;
+                    try {
+                        fileForShare = new File([blob], fileName, { type: 'text/csv' });
+                    } catch (_) {
+                        // 某些老设备不支持 File 构造器
+                    }
+                    // 部分环境不支持 canShare，但 share 仍可工作；因此不强制依赖 canShare
+                    const canShareFiles = typeof navigator.canShare === 'function'
+                        ? (fileForShare ? navigator.canShare({ files: [fileForShare] }) : true)
+                        : true;
+
+                    if (canShareFiles) {
+                        await navigator.share(
+                            fileForShare
+                                ? { files: [fileForShare], title: '成长小账本', text: '导出的数据文件（CSV）' }
+                                : { title: '成长小账本', text: `导出的数据文件：${fileName}` }
+                        );
+                        shared = true;
+                        NotificationsModule?.showNotification('分享已打开', '请选择微信或其它应用进行分享');
+                    }
+                }
+            } catch (err) {
+                // AbortError 表示用户取消，不算失败
+                if (err?.name !== 'AbortError') {
+                    console.warn('系统分享失败:', err);
+                }
+            }
+
+            if (!shared) {
+                // 分享不可用或用户取消，仅提示保存结果
+                if (saved) {
+                    NotificationsModule?.showNotification('导出成功', `文件已保存到应用数据文件夹：${fileName}（设置 → 数据文件夹 中可查看/再次分享）`);
                     return;
                 }
-            } catch (shareErr) {
-                const errorMsg = shareErr.name === 'AbortError' ? '用户取消了分享' : `分享失败: ${shareErr.message}`;
-                console.warn('系统分享失败:', shareErr);
-                NotificationsModule?.showNotification('分享失败', `${errorMsg}，将使用其他保存方式`);
+                // 保存失败则回退为下载
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 100);
+                NotificationsModule?.showNotification('导出完成', `文件已下载: ${fileName}`);
             }
-
-            // 在 APK/WebView 中优先保存到数据文件夹，便于用户在设置 -> 数据文件夹中查看/管理
-            try {
-                if (typeof FileVault !== 'undefined') {
-                    console.log('尝试保存到数据文件夹...');
-                    if (typeof FileVault.saveText === 'function') {
-                        const saved = await FileVault.saveText(fileName, csvData, 'text/csv');
-                        if (saved) {
-                            const message = isMobile 
-                                ? `文件已保存到应用数据文件夹，您可以在设置中查看和管理: ${fileName}`
-                                : `文件已保存到数据文件夹: ${fileName}`;
-                            NotificationsModule?.showNotification('导出成功', message);
-                            return;
-                        }
-                    } else if (typeof FileVault.saveBlob === 'function') {
-                        const saved = await FileVault.saveBlob(fileName, blob);
-                        if (saved) {
-                            const message = isMobile 
-                                ? `文件已保存到应用数据文件夹，您可以在设置中查看和管理: ${fileName}`
-                                : `文件已保存到数据文件夹: ${fileName}`;
-                            NotificationsModule?.showNotification('导出成功', message);
-                            return;
-                        }
-                    }
-                }
-            } catch (vaultErr) {
-                console.warn('保存到数据文件夹失败，回退为下载:', vaultErr);
-                NotificationsModule?.showNotification('提示', '数据文件夹保存失败，将使用浏览器下载方式');
-            }
-
-            // 回退为浏览器下载（桌面优先用此方式）
-            console.log('使用浏览器下载方式...');
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', fileName);
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.click();
-            setTimeout(() => {
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-            }, 100);
-            
-            const message = isMobile 
-                ? `文件已下载到浏览器默认位置: ${fileName}，请在下载文件夹中查找`
-                : `文件已下载: ${fileName}`;
-            NotificationsModule?.showNotification('导出完成', message);
         } catch (error) {
             console.error('导出CSV失败:', error);
-            const errorMessage = error.message || '未知错误';
-            NotificationsModule?.showNotification('导出失败', `导出CSV时出错: ${errorMessage}，请稍后重试`);
+            NotificationsModule?.showNotification('导出失败', `导出CSV时出错: ${error.message || '未知错误'}`);
         }
     };
+
 
     const setupChartTabs = () => {
         const chartTabsContainer = document.querySelector('.chart-tabs');
