@@ -64,13 +64,53 @@ const FileVault = (() => {
                 return true;
             } else {
                 // 降级到下载
-                downloadFallback(jsonString, fileName);
+                downloadFallback(jsonString, fileName, 'application/json');
                 return false;
             }
         } catch (error) {
             console.error('保存文件失败:', error);
             // 降级到下载
-            downloadFallback(jsonString, fileName);
+            downloadFallback(jsonString, fileName, 'application/json');
+            return false;
+        }
+    };
+    
+    // 保存文本数据
+    const saveText = async (fileName, text, mimeType = 'text/plain') => {
+        await initialize();
+        
+        const textString = String(text);
+        
+        try {
+            if (storageType === 'opfs' && opfsDirectory) {
+                // 使用OPFS存储
+                const fileHandle = await opfsDirectory.getFileHandle(fileName, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(textString);
+                await writable.close();
+                console.log(`文本文件已保存到OPFS: ${fileName}`);
+                return true;
+            } else if (storageType === 'localStorage') {
+                // 使用localStorage存储
+                const storageKey = STORAGE_PREFIX + fileName;
+                const fileData = {
+                    content: textString,
+                    lastModified: Date.now(),
+                    size: new Blob([textString]).size,
+                    mimeType: mimeType
+                };
+                localStorage.setItem(storageKey, JSON.stringify(fileData));
+                console.log(`文本文件已保存到localStorage: ${fileName}`);
+                return true;
+            } else {
+                // 降级到下载
+                downloadFallback(textString, fileName, mimeType);
+                return false;
+            }
+        } catch (error) {
+            console.error('保存文本文件失败:', error);
+            // 降级到下载
+            downloadFallback(textString, fileName, mimeType);
             return false;
         }
     };
@@ -204,9 +244,9 @@ const FileVault = (() => {
     };
     
     // 下载降级备份
-    const downloadFallback = (data, fileName) => {
+    const downloadFallback = (data, fileName, mimeType = 'application/json') => {
         try {
-            const blob = new Blob([data], { type: 'application/json' });
+            const blob = new Blob([data], { type: mimeType });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             
@@ -252,6 +292,7 @@ const FileVault = (() => {
     return {
         initialize,
         saveJSON,
+        saveText,
         listFiles,
         readFile,
         deleteFile,
