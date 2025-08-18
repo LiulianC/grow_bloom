@@ -7,101 +7,7 @@ const StatisticsModule = (() => {
     let periodChart;
     let sleepChart;
 
-    // 新增：统一的 CSV 导出/分享逻辑（移动端可分享，桌面端仅下载；APK/WebView优先保存到数据文件夹）
-    const exportCSV = async () => {
-        try {
-            const csvData = StorageService.exportDataToCSV();
-            if (!csvData) throw new Error('CSV数据生成失败');
 
-            const fileName = `bloom_diary_export_${StorageService.getTodayString()}.csv`;
-            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-
-            const ua = (navigator.userAgent || '').toLowerCase();
-            const isMobile = /android|iphone|ipad|ipod|harmonyos|huawei|honor|miui|oppo|vivo|oneplus|samsung/i.test(ua);
-
-            if (!isMobile) {
-                // 桌面端：直接下载，更直观
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-                setTimeout(() => {
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                }, 100);
-                NotificationsModule?.showNotification('导出完成', `文件已下载: ${fileName}`);
-                return;
-            }
-
-            // 移动端（含APK/WebView）：先保存到数据文件夹，再尝试调起系统分享
-            let saved = false;
-            try {
-                if (typeof FileVault !== 'undefined' && typeof FileVault.saveText === 'function') {
-                    saved = await FileVault.saveText(fileName, csvData, 'text/csv');
-                }
-            } catch (e) {
-                console.warn('保存到数据文件夹失败，将尝试直接分享或下载:', e);
-            }
-
-            // 无论保存是否成功，都尝试打开系统分享（以满足“保存->分享”的流程）
-            let shared = false;
-            try {
-                // Web Share API（部分安卓浏览器/系统WebView支持，能唤起微信）
-                if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-                    let fileForShare;
-                    try {
-                        fileForShare = new File([blob], fileName, { type: 'text/csv' });
-                    } catch (_) {
-                        // 某些老设备不支持 File 构造器
-                    }
-                    // 部分环境不支持 canShare，但 share 仍可工作；因此不强制依赖 canShare
-                    const canShareFiles = typeof navigator.canShare === 'function'
-                        ? (fileForShare ? navigator.canShare({ files: [fileForShare] }) : true)
-                        : true;
-
-                    if (canShareFiles) {
-                        await navigator.share(
-                            fileForShare
-                                ? { files: [fileForShare], title: '成长小账本', text: '导出的数据文件（CSV）' }
-                                : { title: '成长小账本', text: `导出的数据文件：${fileName}` }
-                        );
-                        shared = true;
-                        NotificationsModule?.showNotification('分享已打开', '请选择微信或其它应用进行分享');
-                    }
-                }
-            } catch (err) {
-                // AbortError 表示用户取消，不算失败
-                if (err?.name !== 'AbortError') {
-                    console.warn('系统分享失败:', err);
-                }
-            }
-
-            if (!shared) {
-                // 分享不可用或用户取消，仅提示保存结果
-                if (saved) {
-                    NotificationsModule?.showNotification('导出成功', `文件已保存到应用数据文件夹：${fileName}（设置 → 数据文件夹 中可查看/再次分享）`);
-                    return;
-                }
-                // 保存失败则回退为下载
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-                setTimeout(() => {
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                }, 100);
-                NotificationsModule?.showNotification('导出完成', `文件已下载: ${fileName}`);
-            }
-        } catch (error) {
-            console.error('导出CSV失败:', error);
-            NotificationsModule?.showNotification('导出失败', `导出CSV时出错: ${error.message || '未知错误'}`);
-        }
-    };
 
 
     const setupChartTabs = () => {
@@ -1122,6 +1028,163 @@ const StatisticsModule = (() => {
                 }
             });
         });
+    };
+    
+    // 辅助探测
+    const env = {
+        ua: (navigator.userAgent || '').toLowerCase(),
+        get isAndroid() { return /android/i.test(this.ua); },
+        get isWebView() { return /; wv\)/.test(this.ua) || /\bwv\b/.test(this.ua); },
+        get isFileScheme() { return location.protocol === 'file:'; },
+        get hasWebShare() { return typeof navigator !== 'undefined' && typeof navigator.share === 'function'; },
+        get hasCanShare() { return typeof navigator !== 'undefined' && typeof navigator.canShare === 'function'; }
+    };
+
+    // 尝试用 Web Share 分享“文件”
+    async function tryWebShareFile(blob, fileName) {
+        if (!env.hasWebShare) return false;
+        let fileForShare = null;
+        try {
+            fileForShare = new File([blob], fileName, { type: 'text/csv' });
+        } catch (_) {
+            // 老设备不支持 File 构造器
+            return false;
+        }
+        if (env.hasCanShare && !navigator.canShare({ files: [fileForShare] })) {
+            return false;
+        }
+        try {
+            await navigator.share({
+                files: [fileForShare],
+                title: '成长小账本导出',
+                text: 'CSV 数据文件'
+            });
+            return true;
+        } catch (e) {
+            if (e?.name === 'AbortError') return true; // 用户取消也视为已唤起过
+            console.warn('Web Share（文件）失败:', e);
+            return false;
+        }
+    }
+
+    // 尝试用 Web Share 分享“文本”
+    async function tryWebShareText(title, text) {
+        if (!env.hasWebShare) return false;
+        try {
+            await navigator.share({ title, text });
+            return true;
+        } catch (e) {
+            if (e?.name === 'AbortError') return true;
+            console.warn('Web Share（文本）失败:', e);
+            return false;
+        }
+    }
+
+    // 拷贝到剪贴板（作为最后兜底）
+    async function tryCopyToClipboard(text) {
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            }
+        } catch (_) {}
+        return false;
+    }
+
+    // UTF-8 安全的 Base64 编码
+    function toBase64Utf8(str) {
+        try {
+            if (window.TextEncoder) {
+                const bytes = new TextEncoder().encode(str);
+                let binary = '';
+                for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+                return btoa(binary);
+            }
+        } catch (_) {}
+        // 兼容老环境
+        return btoa(unescape(encodeURIComponent(str)));
+    }
+
+    const exportCSV = async () => {
+        try {
+            const csvData = StorageService.exportDataToCSV();
+            if (!csvData) throw new Error('CSV数据生成失败');
+
+            const fileName = `bloom_diary_export_${StorageService.getTodayString()}.csv`;
+            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+
+            // 1) 如果存在原生桥，优先用原生分享（最佳体验，支持微信）
+            if (window.AndroidShare && typeof window.AndroidShare.shareFileBase64 === 'function') {
+                try {
+                    const b64 = toBase64Utf8(csvData);
+
+                    // 先保存到“数据文件夹”（供设置页查看/再次分享）
+                    try { await FileVault.saveText(fileName, csvData, 'text/csv'); } catch (e) {}
+
+                    window.AndroidShare.shareFileBase64(b64, 'text/csv', fileName);
+                    NotificationsModule?.showNotification('已打开分享', '请选择微信或其他应用发送文件');
+                    return;
+                } catch (e) {
+                    console.warn('原生分享失败，回退 Web Share/下载:', e);
+                }
+            }
+
+            // 2) Web Share（文件）
+            let shared = false;
+            if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+                try {
+                    let fileForShare;
+                    try {
+                        fileForShare = new File([blob], fileName, { type: 'text/csv' });
+                    } catch (_) { fileForShare = null; }
+
+                    const canShareFiles = typeof navigator.canShare === 'function'
+                        ? (fileForShare ? navigator.canShare({ files: [fileForShare] }) : false)
+                        : !!fileForShare;
+
+                    if (fileForShare && canShareFiles) {
+                        await navigator.share({ files: [fileForShare], title: '成长小账本', text: '导出的数据文件（CSV）' });
+                        shared = true;
+                    } else {
+                        // 退化为分享文本
+                        await navigator.share({
+                            title: '成长小账本导出',
+                            text: `文件名：${fileName}\n（当前环境不支持直接分享文件，以下为前500字预览）\n\n${csvData.slice(0, 500)}`
+                        });
+                        shared = true;
+                    }
+                } catch (err) {
+                    if (err?.name !== 'AbortError') console.warn('Web Share 失败:', err);
+                }
+            }
+
+            // 3) 仍未分享：保存或下载兜底
+            if (!shared) {
+                let savedOk = false;
+                try { savedOk = await FileVault.saveText(fileName, csvData, 'text/csv'); } catch (_) {}
+
+                if (savedOk) {
+                    NotificationsModule?.showNotification('导出成功', `已保存到数据文件夹：${fileName}（设置 → 数据文件夹 可查看/再次分享）`);
+                } else {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                    NotificationsModule?.showNotification('导出完成', `文件已下载: ${fileName}`);
+                }
+            } else {
+                NotificationsModule?.showNotification('已打开分享', '请选择微信或其他应用');
+            }
+        } catch (error) {
+            console.error('导出CSV失败:', error);
+            NotificationsModule?.showNotification('导出失败', `导出CSV时出错: ${error.message || '未知错误'}`);
+        }
     };
     
     // 公开API

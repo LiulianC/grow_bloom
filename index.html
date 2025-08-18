@@ -11,8 +11,55 @@
     <link rel="stylesheet" href="css/dark-mode.css">
     <!-- 使用本地FontAwesome CSS -->
     <link rel="stylesheet" href="css/fontawesome.min.css">
-    <link rel="manifest" href="manifest.json">
+    <!-- 动态注入 PWA manifest：只在 HTTPS/localhost 环境加载，避免在 file:// 环境触发 CORS 报错 -->
+    <script>
+        (function () {
+            var isSecure = location.protocol === 'https:' ||
+                           location.hostname === 'localhost' ||
+                           location.hostname === '127.0.0.1' ||
+                           location.hostname === '0.0.0.0';
+            if (isSecure) {
+                var link = document.createElement('link');
+                link.rel = 'manifest';
+                link.href = 'manifest.json';
+                document.head.appendChild(link);
+            } else {
+                console.log('非安全上下文(file:// 等)，跳过加载 manifest.json 以避免 CORS 报错');
+            }
+        })();
+    </script>
     <meta name="theme-color" content="#f8c3cd"> 
+
+    <script>
+        // 安全地加载 Chart.js：HTTPS/localhost 优先 CDN，失败再回退到本地；file:// 直接本地
+        (function loadChartJS() {
+            var isSecure = location.protocol === 'https:' ||
+                           location.hostname === 'localhost' ||
+                           location.hostname === '127.0.0.1' ||
+                           location.hostname === '0.0.0.0';
+            var useCdn = isSecure;
+
+            function appendScript(src) {
+                var s = document.createElement('script');
+                s.src = src;
+                s.async = false; // 保证按顺序执行，先加载 Chart 再加载依赖它的模块
+                document.head.appendChild(s);
+                return s;
+            }
+
+            if (useCdn) {
+                var cdn = appendScript('https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js');
+                cdn.onerror = function() {
+                    console.warn('CDN Chart.js 加载失败，回退到本地文件');
+                    appendScript('js/chart.min.js');
+                };
+            } else {
+                // file:// 或不安全上下文：直接用本地
+                appendScript('js/chart.min.js');
+            }
+        })();
+    </script>
+        
 </head>
 <body>
     <div id="app">
@@ -602,13 +649,6 @@
     </div>
 
     <!-- 脚本加载 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-    <!-- 如果 CDN 加载失败，使用本地备份（同步兜底，避免初始化过早进入简化模式） -->
-    <script>
-        if (typeof window.Chart === 'undefined') {
-            document.write('<script src="js/chart.min.js"><\/script>');
-        }
-    </script>
     <script src="js/storage.js"></script>
     <script src="js/timer.js"></script>
     <script src="js/tasks.js"></script>
