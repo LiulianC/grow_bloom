@@ -252,33 +252,22 @@ function displayCurrentDate() {
 function ensureAllFunctionsWork() {
     console.log('确保所有关键功能正常工作...');
     
-    // 使用setTimeout确保DOM完全加载
     setTimeout(() => {
-        // 1. 修复设置按钮
         fixSettingsButton();
-        
-        // 2. 修复任务模块事件
         fixTasksModule();
-        
-        // 3. 修复统计模块事件
         fixStatisticsModule();
-        
-        // 4. 修复计时器模块事件
         fixTimerModule();
-        
-        // 5. 确保关闭模态框功能正常
         fixModalCloseButtons();
-        
-        // 6. 设置起床打卡功能
+
+        // 关键顺序：先睡觉，再起床（保证“必须先睡后起”的约束生效）
+        setupSleepCheckIn();
         setupWakeupCheckIn();
-        
-        // 7. 确保任务模块事件绑定（新增）
+
         if (typeof TasksModule !== 'undefined' && TasksModule.ensureEventBindings) {
             setTimeout(() => {
                 TasksModule.ensureEventBindings();
             }, 200);
         }
-        
         console.log('所有功能修复完成');
     }, 100);
 }
@@ -393,8 +382,10 @@ function setupSleepCheckIn() {
     const btn = document.getElementById('sleep-btn');
     if (!btn) return;
 
-    checkTodaySleepStatus(); // 先刷新卡片
+    // 首次刷新卡片状态
+    checkTodaySleepStatus();
 
+    // 去重绑定
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
 
@@ -403,7 +394,6 @@ function setupSleepCheckIn() {
     });
 }
 
-// 显示“今日睡觉打卡”卡片状态
 function checkTodaySleepStatus() {
     try {
         const sleepBtn = document.getElementById('sleep-btn');
@@ -441,10 +431,6 @@ function checkTodaySleepStatus() {
     }
 }
 
-// 执行“今日睡觉打卡”
-// 规则：
-// - 仅创建“未结算的pending记录”，不直接写入今天daily的时长
-// - 若已有pending，则提示“已记录”
 function performSleepCheckIn() {
     try {
         const pending = StorageService.getPendingSleep();
@@ -456,9 +442,8 @@ function performSleepCheckIn() {
         const now = new Date();
         StorageService.setPendingSleep(now.toISOString());
 
-        // UI
+        // UI 刷新
         checkTodaySleepStatus();
-        // 同步“起床卡片”的可用性
         checkTodayWakeupStatus();
 
         NotificationsModule.showNotification('睡觉打卡', '入睡时间已记录');
@@ -468,19 +453,12 @@ function performSleepCheckIn() {
     }
 }
 
-/* ====================== 起床打卡：必须有 pending 才能结算 ====================== */
-
-// 起床按钮可用性：有 pending 才能按；已完成则禁用
 function setupWakeupCheckIn() {
     console.log('设置起床打卡功能...');
-    
     const wakeupBtn = document.getElementById('wakeup-btn');
-    if (!wakeupBtn) {
-        console.error('找不到起床打卡按钮');
-        return;
-    }
+    if (!wakeupBtn) return;
 
-    // 刷新状态
+    // 首次刷新卡片状态
     checkTodayWakeupStatus();
 
     // 去重绑定
@@ -492,7 +470,6 @@ function setupWakeupCheckIn() {
     });
 }
 
-// 根据“pending”和“今日是否已结算”刷新起床卡片
 function checkTodayWakeupStatus() {
     try {
         const wakeupBtn = document.getElementById('wakeup-btn');
@@ -506,7 +483,6 @@ function checkTodayWakeupStatus() {
             // 已完成
             const endTime = todayData.sleepEndRef ? new Date(todayData.sleepEndRef) : (todayData.wakeupTime ? new Date(todayData.wakeupTime) : null);
             const timeString = endTime ? endTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '';
-
             if (wakeupBtn) { wakeupBtn.textContent = '已完成'; wakeupBtn.disabled = true; wakeupBtn.classList.add('secondary-btn'); wakeupBtn.classList.remove('primary-btn'); }
             if (wakeupStatus) { wakeupStatus.textContent = '已完成'; wakeupStatus.classList.add('completed'); }
             if (wakeupTimeDisplay) { wakeupTimeDisplay.textContent = timeString ? `打卡时间：${timeString}` : ''; wakeupTimeDisplay.classList.remove('hidden'); }
@@ -529,17 +505,15 @@ function checkTodayWakeupStatus() {
     }
 }
 
-// 计算分钟差（遵循你的两种规则，最终实现等价于 end - start）
+// 计算睡眠分钟差（同日/跨日）
 function computeSleepMinutes(startISO, endISO) {
     const start = new Date(startISO);
     const end = new Date(endISO);
     if (isNaN(start) || isNaN(end)) return 0;
 
     if (sameDate(start, end)) {
-        // 同日：直接差
         return Math.max(0, Math.round((end - start) / 60000));
     } else {
-        // 跨日： (24:00 - start) + (end - 当日0:00)
         const nextMidnight = new Date(start);
         nextMidnight.setHours(24, 0, 0, 0);
         const endMidnight = new Date(end);
@@ -550,7 +524,6 @@ function computeSleepMinutes(startISO, endISO) {
     }
 }
 
-// 执行起床打卡：必须存在 pending，结算到“今天”
 function performWakeupCheckIn() {
     try {
         const now = new Date();
@@ -577,14 +550,14 @@ function performWakeupCheckIn() {
             allData[todayIndex].wakeupTime = now.toISOString();
         }
 
-        // 防重复：若今日已结算过睡眠，不允许再次打卡
+        // 防重复
         if (allData[todayIndex].sleepDuration > 0) {
             NotificationsModule.showNotification('已完成', '今日睡眠已结算，无需重复打卡');
             checkTodayWakeupStatus();
             return;
         }
 
-        // 必须有 pending
+        // 必须先睡觉
         const pending = StorageService.getPendingSleep();
         if (!pending || !pending.startRef) {
             NotificationsModule.showNotification('无法打卡', '请先进行“今日睡觉打卡”');
@@ -597,22 +570,21 @@ function performWakeupCheckIn() {
         const endRef = now.toISOString();
         const minutes = computeSleepMinutes(startRef, endRef);
 
-        // 写回今天（起床当天）
+        // 归属今天
         allData[todayIndex].sleepStartRef = startRef;
         allData[todayIndex].sleepEndRef = endRef;
         allData[todayIndex].sleepDuration = minutes;
 
-        // 一天只允许一段睡眠：清理 pending
+        // 清 pending
         StorageService.clearPendingSleep();
 
         // 保存
         localStorage.setItem(StorageService.KEYS.DAILY_DATA, JSON.stringify(allData));
 
-        // UI 刷新
+        // 刷新 UI
         checkTodaySleepStatus();
         checkTodayWakeupStatus();
 
-        // 通知
         const h = Math.floor(minutes / 60);
         const m = minutes % 60;
         NotificationsModule.showNotification('起床打卡成功', `本次睡眠：${h}小时${m}分钟`);
@@ -620,7 +592,6 @@ function performWakeupCheckIn() {
         // 刷新总览/统计
         if (typeof updateDailyOverview === 'function') updateDailyOverview();
         try {
-            // 若当前在统计页且“睡眠”图活跃，自动刷新
             const activeTab = document.querySelector('.chart-tab.active');
             const activePeriod = document.querySelector('.stat-period.active')?.dataset?.period || 'day';
             if (activeTab && activeTab.dataset.chart === 'sleep' && typeof StatisticsModule.updateSleepChart === 'function') {
@@ -632,6 +603,18 @@ function performWakeupCheckIn() {
         NotificationsModule.showNotification('打卡失败', '起床打卡时出错，请重试');
     }
 }
+
+// 暴露到全局，供设置中的“重置今日睡眠记录”等调用后刷新
+window.checkTodaySleepStatus = checkTodaySleepStatus;
+window.checkTodayWakeupStatus = checkTodayWakeupStatus;
+window.performSleepCheckIn = performSleepCheckIn;
+window.performWakeupCheckIn = performWakeupCheckIn;
+
+
+
+
+
+
 
 
 // 新增：专门绑定设置按钮事件的函数
