@@ -290,6 +290,8 @@ const SettingsModule = (() => {
                 NotificationsModule.showNotification('操作失败', error.message);
             }
         });
+
+        
         
         // 加载当前设置
         try {

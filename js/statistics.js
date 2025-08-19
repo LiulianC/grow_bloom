@@ -865,6 +865,7 @@ const StatisticsModule = (() => {
     };
     
     // 更新睡眠图表
+    // 更新睡眠图表（读取起床当天的 sleepDuration）
     const updateSleepChart = (period) => {
         try {
             console.log(`更新睡眠图表，周期: ${period}`);
@@ -872,115 +873,74 @@ const StatisticsModule = (() => {
             let filteredData = [];
             const currentDate = new Date();
             
-            // 使用相同的日期过滤逻辑
             switch (period) {
                 case 'day':
                     filteredData = allData.filter(data => data.date === StorageService.getTodayString());
                     break;
                 case 'week':
-                    // 获取最近7天的数据，特别包含7-24
                     filteredData = allData.filter(data => {
-                        // 特别处理2025-07-24
-                        if (data.date === '2025-07-24') {
-                            return true;
-                        }
-                        
                         try {
                             const [year, month, day] = data.date.split('-').map(Number);
                             const dataDate = new Date(year, month - 1, day);
                             dataDate.setHours(0, 0, 0, 0);
-                            
                             const today = new Date(currentDate);
                             today.setHours(0, 0, 0, 0);
-                            
-                            const diffTime = today - dataDate;
-                            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                            
+                            const diffDays = Math.floor((today - dataDate) / (1000 * 60 * 60 * 24));
                             return diffDays < 7 && data.sleepDuration > 0;
-                        } catch (error) {
+                        } catch {
                             return false;
                         }
                     });
                     break;
                 case 'month':
-                    // 获取最近30天的数据，特别包含7-24
                     filteredData = allData.filter(data => {
-                        // 特别处理2025-07-24
-                        if (data.date === '2025-07-24') {
-                            return true;
-                        }
-                        
                         try {
                             const [year, month, day] = data.date.split('-').map(Number);
                             const dataDate = new Date(year, month - 1, day);
                             dataDate.setHours(0, 0, 0, 0);
-                            
                             const today = new Date(currentDate);
                             today.setHours(0, 0, 0, 0);
-                            
-                            const diffTime = today - dataDate;
-                            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                            
+                            const diffDays = Math.floor((today - dataDate) / (1000 * 60 * 60 * 24));
                             return diffDays < 30 && data.sleepDuration > 0;
-                        } catch (error) {
+                        } catch {
                             return false;
                         }
                     });
                     break;
                 case 'year':
-                    // 获取最近365天的数据，特别包含7-24
                     filteredData = allData.filter(data => {
-                        // 特别处理2025-07-24
-                        if (data.date === '2025-07-24') {
-                            return true;
-                        }
-                        
                         try {
                             const [year, month, day] = data.date.split('-').map(Number);
                             const dataDate = new Date(year, month - 1, day);
                             dataDate.setHours(0, 0, 0, 0);
-                            
                             const today = new Date(currentDate);
                             today.setHours(0, 0, 0, 0);
-                            
-                            const diffTime = today - dataDate;
-                            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                            
+                            const diffDays = Math.floor((today - dataDate) / (1000 * 60 * 60 * 24));
                             return diffDays < 365 && data.sleepDuration > 0;
-                        } catch (error) {
+                        } catch {
                             return false;
                         }
                     });
                     break;
             }
             
-            // 按日期排序，从旧到新
-            filteredData.sort((a, b) => {
-                const dateA = new Date(a.date);
-                const dateB = new Date(b.date);
-                return dateA - dateB;
-            });
+            filteredData.sort((a, b) => new Date(a.date) - new Date(b.date));
             
-            // 准备图表数据
             const labels = filteredData.map(data => {
-                const [year, month, day] = data.date.split('-').map(Number);
-                return `${month}/${day}`;
+                const [y, m, d] = data.date.split('-').map(Number);
+                return `${m}/${d}`;
             });
+            const sleepData = filteredData.map(data => (data.sleepDuration ? data.sleepDuration / 60 : 0));
             
-            const sleepData = filteredData.map(data => {
-                return data.sleepDuration ? data.sleepDuration / 60 : 0; // 转换为小时
-            });
-            
-            // 更新图表数据
-            safeUpdateChart(sleepChart, () => {
-                sleepChart.data.labels = labels;
-                sleepChart.data.datasets[0].data = sleepData;
-            });
-            
+            if (!sleepChart) return;
+            sleepChart.data.labels = labels;
+            sleepChart.data.datasets[0].data = sleepData;
+            sleepChart.update();
         } catch (error) {
             console.error('更新睡眠图表出错:', error);
         }
     };
+
     
     // 修改 setupPeriodSwitching 函数
     const setupPeriodSwitching = () => {
@@ -1194,6 +1154,6 @@ const StatisticsModule = (() => {
         updatePeriodChart,
         updateSleepChart,
         updateWakeupChart,
-        exportCSV // 新增：对外导出方法
+        exportCSV
     };
 })();
