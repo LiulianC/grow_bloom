@@ -344,8 +344,11 @@ const StatisticsModule = (() => {
                 periodChart.data.datasets[3].data = selfImprovementData;
                 periodChart.data.datasets[4].data = socialBondsData;
                 periodChart.data.datasets[5].data = totalIncomeData;
-                
-                // Update chart options based on period for better performance and visual lightness
+            });
+            
+            // Update chart options based on period for better performance and visual lightness
+            // (Do this outside of safeUpdateChart to avoid recursion)
+            try {
                 const options = periodChart.options;
                 
                 // Apply lighter visuals and performance optimizations based on period
@@ -385,7 +388,12 @@ const StatisticsModule = (() => {
                         autoSkip: true
                     };
                 }
-            });
+                
+                // Trigger a separate update for the options
+                periodChart.update('none'); // Use 'none' mode for faster update
+            } catch (optionsError) {
+                console.error('Error updating chart options:', optionsError);
+            }
             
         } catch (error) {
             console.error('更新周期图表出错:', error);
