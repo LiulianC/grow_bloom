@@ -61,7 +61,9 @@ const StatisticsModule = (() => {
                         borderColor: '#f8c3cd',
                         backgroundColor: '#f8c3cd20',
                         fill: false,
-                        tension: 0.4
+                        tension: 0.4,
+                        borderWidth: 1.5,
+                        pointRadius: 0
                     },
                     {
                         label: '目标时间',
@@ -70,6 +72,7 @@ const StatisticsModule = (() => {
                         backgroundColor: '#ffcf5c20',
                         fill: false,
                         borderDash: [5, 5],
+                        borderWidth: 1.5,
                         pointRadius: 0
                     }
                 ]
@@ -81,10 +84,17 @@ const StatisticsModule = (() => {
                     x: {
                         grid: {
                             display: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 8,
+                            autoSkip: true
                         }
                     },
                     y: {
                         reverse: true, 
+                        grid: {
+                            color: 'rgba(200, 200, 200, 0.05)' // Softer grid lines
+                        },
                         ticks: {
                             callback: function(value) {
                                 const hours = Math.floor(value);
@@ -105,12 +115,100 @@ const StatisticsModule = (() => {
                             }
                         }
                     }
+                },
+                elements: {
+                    point: {
+                        radius: 0 // Ensure no point markers
+                    },
+                    line: {
+                        borderWidth: 1.5
+                    }
                 }
             }
         });
         } catch (error) {
             console.error('Failed to setup wakeup chart:', error);
         }
+    };
+
+    /**
+     * Aggregate daily data into monthly buckets for income data
+     * @param {Array} dailyData - Array of daily data records
+     * @returns {Array} Monthly aggregated data
+     */
+    const aggregateToMonthly = (dailyData) => {
+        const monthlyMap = new Map();
+        
+        dailyData.forEach(data => {
+            const [year, month] = data.date.split('-').slice(0, 2);
+            const monthKey = `${year}-${month}`;
+            
+            if (!monthlyMap.has(monthKey)) {
+                monthlyMap.set(monthKey, {
+                    date: monthKey,
+                    totalEarnings: {
+                        bodyHealth: 0,
+                        mentalHealth: 0,
+                        soulNourishment: 0,
+                        selfImprovement: 0,
+                        socialBonds: 0,
+                        total: 0
+                    },
+                    count: 0
+                });
+            }
+            
+            const monthData = monthlyMap.get(monthKey);
+            if (data.totalEarnings) {
+                monthData.totalEarnings.bodyHealth += data.totalEarnings.bodyHealth || 0;
+                monthData.totalEarnings.mentalHealth += data.totalEarnings.mentalHealth || 0;
+                monthData.totalEarnings.soulNourishment += data.totalEarnings.soulNourishment || 0;
+                monthData.totalEarnings.selfImprovement += data.totalEarnings.selfImprovement || 0;
+                monthData.totalEarnings.socialBonds += data.totalEarnings.socialBonds || 0;
+                monthData.totalEarnings.total += data.totalEarnings.total || 0;
+            }
+            monthData.count++;
+        });
+        
+        return Array.from(monthlyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+    };
+
+    /**
+     * Aggregate daily sleep data into monthly averages
+     * @param {Array} dailyData - Array of daily data records
+     * @returns {Array} Monthly sleep data with averages
+     */
+    const aggregateSleepToMonthly = (dailyData) => {
+        const monthlyMap = new Map();
+        
+        dailyData.forEach(data => {
+            if (data.sleepDuration && data.sleepDuration > 0) {
+                const [year, month] = data.date.split('-').slice(0, 2);
+                const monthKey = `${year}-${month}`;
+                
+                if (!monthlyMap.has(monthKey)) {
+                    monthlyMap.set(monthKey, {
+                        date: monthKey,
+                        totalSleepMinutes: 0,
+                        daysWithSleep: 0
+                    });
+                }
+                
+                const monthData = monthlyMap.get(monthKey);
+                monthData.totalSleepMinutes += data.sleepDuration;
+                monthData.daysWithSleep++;
+            }
+        });
+        
+        // Convert to average hours per month
+        return Array.from(monthlyMap.values())
+            .map(monthData => ({
+                date: monthData.date,
+                averageSleepHours: monthData.daysWithSleep > 0 
+                    ? monthData.totalSleepMinutes / monthData.daysWithSleep / 60 
+                    : 0
+            }))
+            .sort((a, b) => a.date.localeCompare(b.date));
     };
 
     /**
@@ -121,6 +219,7 @@ const StatisticsModule = (() => {
             console.log(`更新周期图表，周期: ${period}`);
             const allData = StorageService.getAllData();
             let filteredData = [];
+            let labels = [];
             const currentDate = new Date();
             
             console.log('所有可用数据日期:');
@@ -131,11 +230,13 @@ const StatisticsModule = (() => {
             switch (period) {
                 case 'day':
                     filteredData = [allData.find(data => data.date === StorageService.getTodayString())].filter(Boolean);
+                    labels = filteredData.map(data => {
+                        const [year, month, day] = data.date.split('-').map(Number);
+                        return `${month}/${day}`;
+                    });
                     break;
                 case 'week':
-
                     filteredData = allData.filter(data => {
-                        
                         try {
                             const [year, month, day] = data.date.split('-').map(Number);
                             const dataDate = new Date(year, month - 1, day);
@@ -153,11 +254,20 @@ const StatisticsModule = (() => {
                             return false;
                         }
                     });
+                    
+                    filteredData.sort((a, b) => {
+                        const dateA = new Date(a.date);
+                        const dateB = new Date(b.date);
+                        return dateA - dateB;
+                    });
+                    
+                    labels = filteredData.map(data => {
+                        const [year, month, day] = data.date.split('-').map(Number);
+                        return `${month}/${day}`;
+                    });
                     break;
                 case 'month':
-
                     filteredData = allData.filter(data => {
-
                         try {
                             const [year, month, day] = data.date.split('-').map(Number);
                             const dataDate = new Date(year, month - 1, day);
@@ -175,11 +285,21 @@ const StatisticsModule = (() => {
                             return false;
                         }
                     });
+                    
+                    filteredData.sort((a, b) => {
+                        const dateA = new Date(a.date);
+                        const dateB = new Date(b.date);
+                        return dateA - dateB;
+                    });
+                    
+                    labels = filteredData.map(data => {
+                        const [year, month, day] = data.date.split('-').map(Number);
+                        return `${month}/${day}`;
+                    });
                     break;
                 case 'year':
-
-                    filteredData = allData.filter(data => {
-
+                    // Get data from last 365 days
+                    const yearData = allData.filter(data => {
                         try {
                             const [year, month, day] = data.date.split('-').map(Number);
                             const dataDate = new Date(year, month - 1, day);
@@ -197,25 +317,17 @@ const StatisticsModule = (() => {
                             return false;
                         }
                     });
+                    
+                    // Aggregate to monthly data
+                    filteredData = aggregateToMonthly(yearData);
+                    labels = filteredData.map(data => {
+                        const [year, month] = data.date.split('-');
+                        return `${year.slice(2)}/${month}`; // YY/MM format
+                    });
                     break;
             }
             
             console.log(`过滤后数据点数量: ${filteredData.length}`);
-            filteredData.forEach(data => {
-                console.log(`- 包含日期: ${data.date}`);
-            });
-            
-
-            filteredData.sort((a, b) => {
-                const dateA = new Date(a.date);
-                const dateB = new Date(b.date);
-                return dateA - dateB;
-            });
-            
-            const labels = filteredData.map(data => {
-                const [year, month, day] = data.date.split('-').map(Number);
-                return `${month}/${day}`;
-            });
             
             const bodyHealthData = filteredData.map(data => data.totalEarnings?.bodyHealth || 0);
             const mentalHealthData = filteredData.map(data => data.totalEarnings?.mentalHealth || 0);
@@ -232,6 +344,47 @@ const StatisticsModule = (() => {
                 periodChart.data.datasets[3].data = selfImprovementData;
                 periodChart.data.datasets[4].data = socialBondsData;
                 periodChart.data.datasets[5].data = totalIncomeData;
+                
+                // Update chart options based on period for better performance and visual lightness
+                const options = periodChart.options;
+                
+                // Apply lighter visuals and performance optimizations based on period
+                if (period === 'month') {
+                    // Enable decimation for month view
+                    options.plugins = options.plugins || {};
+                    options.plugins.decimation = {
+                        enabled: true,
+                        algorithm: 'lttb',
+                        samples: 80
+                    };
+                    
+                    // Limit x-axis ticks for month view
+                    options.scales.x.ticks = {
+                        maxTicksLimit: 10,
+                        autoSkip: true
+                    };
+                } else if (period === 'year') {
+                    // Disable decimation for year view (we already aggregated)
+                    if (options.plugins && options.plugins.decimation) {
+                        options.plugins.decimation.enabled = false;
+                    }
+                    
+                    // Allow more ticks for year view since we have fewer points
+                    options.scales.x.ticks = {
+                        maxTicksLimit: 12,
+                        autoSkip: false
+                    };
+                } else {
+                    // Disable decimation for day/week views
+                    if (options.plugins && options.plugins.decimation) {
+                        options.plugins.decimation.enabled = false;
+                    }
+                    
+                    options.scales.x.ticks = {
+                        maxTicksLimit: 8,
+                        autoSkip: true
+                    };
+                }
             });
             
         } catch (error) {
@@ -436,9 +589,10 @@ const StatisticsModule = (() => {
                     console.warn('Chart.js 仍未加载，使用简化统计模式');
                     setupLimitedStatistics();
                 } else {
+                    console.log('Chart.js 现在可用，初始化完整图表功能');
                     initializeWithChart();
                 }
-            }, 300);
+            }, 1000); // Increased timeout to give Chart.js more time to load
             return;
         }
         
@@ -551,6 +705,10 @@ const StatisticsModule = (() => {
             Chart.defaults.font.family = "'PingFang SC', 'Helvetica Neue', Arial, sans-serif";
             Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary');
             
+            // Apply lighter visual defaults globally
+            Chart.defaults.elements.point.radius = 0; // No point markers by default
+            Chart.defaults.elements.line.borderWidth = 1.5; // Thinner lines
+            
             dailyChart = new Chart(dailyChartCtx, {
                 type: 'doughnut',
                 data: {
@@ -602,7 +760,9 @@ const StatisticsModule = (() => {
                             borderColor: '#f8c3cd',
                             backgroundColor: '#f8c3cd20',
                             fill: true,
-                            tension: 0.4
+                            tension: 0.4,
+                            borderWidth: 1.5,
+                            pointRadius: 0
                         },
                         {
                             label: '心理健康',
@@ -610,7 +770,9 @@ const StatisticsModule = (() => {
                             borderColor: '#a5d8ff',
                             backgroundColor: '#a5d8ff20',
                             fill: true,
-                            tension: 0.4
+                            tension: 0.4,
+                            borderWidth: 1.5,
+                            pointRadius: 0
                         },
                         {
                             label: '灵魂滋养',
@@ -618,7 +780,9 @@ const StatisticsModule = (() => {
                             borderColor: '#b5e6b5',
                             backgroundColor: '#b5e6b520',
                             fill: true,
-                            tension: 0.4
+                            tension: 0.4,
+                            borderWidth: 1.5,
+                            pointRadius: 0
                         },
                         {
                             label: '自我提升',
@@ -626,7 +790,9 @@ const StatisticsModule = (() => {
                             borderColor: '#ffcf5c',
                             backgroundColor: '#ffcf5c20',
                             fill: true,
-                            tension: 0.4
+                            tension: 0.4,
+                            borderWidth: 1.5,
+                            pointRadius: 0
                         },
                         {
                             label: '广结善缘',
@@ -634,7 +800,9 @@ const StatisticsModule = (() => {
                             borderColor: '#d4a5ff', 
                             backgroundColor: '#d4a5ff20',
                             fill: true,
-                            tension: 0.4
+                            tension: 0.4,
+                            borderWidth: 1.5,
+                            pointRadius: 0
                         },
                         {
                             label: '总收入',
@@ -643,8 +811,9 @@ const StatisticsModule = (() => {
                             backgroundColor: '#6e789120',
                             fill: false,
                             tension: 0.4,
-                            borderWidth: 2,
-                            borderDash: [5, 5]
+                            borderWidth: 2, // Keep total series slightly thicker
+                            borderDash: [5, 5],
+                            pointRadius: 0
                         }
                     ]
                 },
@@ -655,12 +824,16 @@ const StatisticsModule = (() => {
                         x: {
                             grid: {
                                 display: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 8,
+                                autoSkip: true
                             }
                         },
                         y: {
                             beginAtZero: true,
                             grid: {
-                                color: 'rgba(200, 200, 200, 0.1)'
+                                color: 'rgba(200, 200, 200, 0.05)' // Softer grid lines
                             }
                         }
                     },
@@ -680,6 +853,19 @@ const StatisticsModule = (() => {
                                     return `${label}: ${value}元`;
                                 }
                             }
+                        },
+                        decimation: {
+                            enabled: false, // Will be enabled dynamically for month view
+                            algorithm: 'lttb',
+                            samples: 80
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: 0 // Ensure no point markers
+                        },
+                        line: {
+                            borderWidth: 1.5
                         }
                     }
                 }
@@ -708,12 +894,16 @@ const StatisticsModule = (() => {
                             x: {
                                 grid: {
                                     display: false
+                                },
+                                ticks: {
+                                    maxTicksLimit: 8,
+                                    autoSkip: true
                                 }
                             },
                             y: {
                                 beginAtZero: true,
                                 grid: {
-                                    color: 'rgba(200, 200, 200, 0.1)'
+                                    color: 'rgba(200, 200, 200, 0.05)' // Softer grid lines
                                 },
                                 ticks: {
                                     callback: function(value) {
@@ -871,11 +1061,18 @@ const StatisticsModule = (() => {
             console.log(`更新睡眠图表，周期: ${period}`);
             const allData = StorageService.getAllData();
             let filteredData = [];
+            let labels = [];
+            let sleepData = [];
             const currentDate = new Date();
             
             switch (period) {
                 case 'day':
                     filteredData = allData.filter(data => data.date === StorageService.getTodayString());
+                    labels = filteredData.map(data => {
+                        const [y, m, d] = data.date.split('-').map(Number);
+                        return `${m}/${d}`;
+                    });
+                    sleepData = filteredData.map(data => (data.sleepDuration ? data.sleepDuration / 60 : 0));
                     break;
                 case 'week':
                     filteredData = allData.filter(data => {
@@ -891,6 +1088,13 @@ const StatisticsModule = (() => {
                             return false;
                         }
                     });
+                    
+                    filteredData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    labels = filteredData.map(data => {
+                        const [y, m, d] = data.date.split('-').map(Number);
+                        return `${m}/${d}`;
+                    });
+                    sleepData = filteredData.map(data => (data.sleepDuration ? data.sleepDuration / 60 : 0));
                     break;
                 case 'month':
                     filteredData = allData.filter(data => {
@@ -906,9 +1110,17 @@ const StatisticsModule = (() => {
                             return false;
                         }
                     });
+                    
+                    filteredData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    labels = filteredData.map(data => {
+                        const [y, m, d] = data.date.split('-').map(Number);
+                        return `${m}/${d}`;
+                    });
+                    sleepData = filteredData.map(data => (data.sleepDuration ? data.sleepDuration / 60 : 0));
                     break;
                 case 'year':
-                    filteredData = allData.filter(data => {
+                    // Get data from last 365 days and aggregate to monthly averages
+                    const yearData = allData.filter(data => {
                         try {
                             const [year, month, day] = data.date.split('-').map(Number);
                             const dataDate = new Date(year, month - 1, day);
@@ -921,20 +1133,46 @@ const StatisticsModule = (() => {
                             return false;
                         }
                     });
+                    
+                    // Aggregate to monthly averages
+                    const monthlyAverages = aggregateSleepToMonthly(yearData);
+                    labels = monthlyAverages.map(data => {
+                        const [year, month] = data.date.split('-');
+                        return `${year.slice(2)}/${month}`; // YY/MM format
+                    });
+                    sleepData = monthlyAverages.map(data => data.averageSleepHours);
                     break;
             }
             
-            filteredData.sort((a, b) => new Date(a.date) - new Date(b.date));
-            
-            const labels = filteredData.map(data => {
-                const [y, m, d] = data.date.split('-').map(Number);
-                return `${m}/${d}`;
-            });
-            const sleepData = filteredData.map(data => (data.sleepDuration ? data.sleepDuration / 60 : 0));
-            
             if (!sleepChart) return;
+            
             sleepChart.data.labels = labels;
             sleepChart.data.datasets[0].data = sleepData;
+            
+            // Update chart options for better performance and visual lightness
+            const options = sleepChart.options;
+            
+            // Apply performance optimizations and visual improvements based on period
+            if (period === 'month') {
+                // Limit ticks for month view to reduce clutter
+                options.scales.x.ticks = {
+                    maxTicksLimit: 10,
+                    autoSkip: true
+                };
+            } else if (period === 'year') {
+                // Allow more ticks for year view since we have fewer points (12 max)
+                options.scales.x.ticks = {
+                    maxTicksLimit: 12,
+                    autoSkip: false
+                };
+            } else {
+                // Day/week views
+                options.scales.x.ticks = {
+                    maxTicksLimit: 8,
+                    autoSkip: true
+                };
+            }
+            
             sleepChart.update();
         } catch (error) {
             console.error('更新睡眠图表出错:', error);
