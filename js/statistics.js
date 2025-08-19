@@ -346,55 +346,6 @@ const StatisticsModule = (() => {
                 periodChart.data.datasets[5].data = totalIncomeData;
             });
             
-            // Update chart options based on period for better performance and visual lightness
-            // (Do this outside of safeUpdateChart to avoid recursion)
-            try {
-                const options = periodChart.options;
-                
-                // Apply lighter visuals and performance optimizations based on period
-                if (period === 'month') {
-                    // Enable decimation for month view
-                    options.plugins = options.plugins || {};
-                    options.plugins.decimation = {
-                        enabled: true,
-                        algorithm: 'lttb',
-                        samples: 80
-                    };
-                    
-                    // Limit x-axis ticks for month view
-                    options.scales.x.ticks = {
-                        maxTicksLimit: 10,
-                        autoSkip: true
-                    };
-                } else if (period === 'year') {
-                    // Disable decimation for year view (we already aggregated)
-                    if (options.plugins && options.plugins.decimation) {
-                        options.plugins.decimation.enabled = false;
-                    }
-                    
-                    // Allow more ticks for year view since we have fewer points
-                    options.scales.x.ticks = {
-                        maxTicksLimit: 12,
-                        autoSkip: false
-                    };
-                } else {
-                    // Disable decimation for day/week views
-                    if (options.plugins && options.plugins.decimation) {
-                        options.plugins.decimation.enabled = false;
-                    }
-                    
-                    options.scales.x.ticks = {
-                        maxTicksLimit: 8,
-                        autoSkip: true
-                    };
-                }
-                
-                // Trigger a separate update for the options
-                periodChart.update('none'); // Use 'none' mode for faster update
-            } catch (optionsError) {
-                console.error('Error updating chart options:', optionsError);
-            }
-            
         } catch (error) {
             console.error('更新周期图表出错:', error);
         }
@@ -552,7 +503,7 @@ const StatisticsModule = (() => {
         try {
             if (isChartInitialized(chart)) {
                 updateFunction();
-                chart.update();
+                chart.update('none');
                 return true;
             } else {
                 console.error('图表未初始化');
@@ -863,9 +814,10 @@ const StatisticsModule = (() => {
                             }
                         },
                         decimation: {
-                            enabled: false, // Will be enabled dynamically for month view
+                            enabled: true,
                             algorithm: 'lttb',
-                            samples: 80
+                            samples: 80,
+                            threshold: 100
                         }
                     },
                     elements: {
@@ -1157,31 +1109,7 @@ const StatisticsModule = (() => {
             sleepChart.data.labels = labels;
             sleepChart.data.datasets[0].data = sleepData;
             
-            // Update chart options for better performance and visual lightness
-            const options = sleepChart.options;
-            
-            // Apply performance optimizations and visual improvements based on period
-            if (period === 'month') {
-                // Limit ticks for month view to reduce clutter
-                options.scales.x.ticks = {
-                    maxTicksLimit: 10,
-                    autoSkip: true
-                };
-            } else if (period === 'year') {
-                // Allow more ticks for year view since we have fewer points (12 max)
-                options.scales.x.ticks = {
-                    maxTicksLimit: 12,
-                    autoSkip: false
-                };
-            } else {
-                // Day/week views
-                options.scales.x.ticks = {
-                    maxTicksLimit: 8,
-                    autoSkip: true
-                };
-            }
-            
-            sleepChart.update();
+            sleepChart.update('none');
         } catch (error) {
             console.error('更新睡眠图表出错:', error);
         }
