@@ -5,7 +5,7 @@ const TimerModule = (() => {
     // 私有状态
     let timerInterval = null;
     let startTime = null;            // ms，真实开始时间（含暂停恢复修正）
-    let elapsedTime = 0;             // s，用于界面展示
+    let elapsedTime = 0;             // s，用于界面展示与结算（累计已运行时间，不含暂停）
     let targetTime = 0;              // s，倒计时总时长
     let isRunning = false;
     let isCountdown = false;
@@ -51,11 +51,12 @@ const TimerModule = (() => {
         // 开始本次学习，解锁完成防抖
         hasCompletedThisSession = false;
 
-        // 以真实时间差为准，支持暂停恢复
+        // 以真实时间差为准，支持暂停恢复（暂停后再次开始，会用累计的 elapsedTime 回算开始时刻）
         startTime = Date.now() - (elapsedTime * 1000);
 
         timerInterval = setInterval(() => {
-            elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+            // 仅在运行时按真实时间差累加，暂停时不变
+            elapsedTime = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
             updateDisplay();
         }, 1000);
 
@@ -71,7 +72,9 @@ const TimerModule = (() => {
     const pauseTimer = () => {
         if (!isRunning) return;
 
+        // 此刻的 elapsedTime 已由 setInterval 刷新为“实际已运行秒数”
         clearInterval(timerInterval);
+        timerInterval = null;
         isRunning = false;
 
         startButton.disabled = false;
@@ -80,7 +83,7 @@ const TimerModule = (() => {
 
     // 停止（弹出确认）
     const stopTimer = () => {
-        if (!startTime) return;
+        if (startTime === null && elapsedTime === 0) return;
 
         const modalOverlay = document.getElementById('modal-overlay');
         const exitModal = document.getElementById('exit-confirm-modal');
@@ -102,6 +105,21 @@ const TimerModule = (() => {
         if (exitModal) exitModal.classList.remove('hidden');
     };
 
+    // 计算“实际生效的学习秒数”
+    // - 运行中：以当前时间与 startTime 的差计算
+    // - 暂停/未运行：直接使用累计的 elapsedTime
+    // - 倒计时：封顶到 targetTime（避免超过总时长）
+    const getEffectiveElapsedSeconds = () => {
+        const runningSeconds = isRunning && typeof startTime === 'number'
+            ? Math.max(0, Math.floor((Date.now() - startTime) / 1000))
+            : Math.max(0, elapsedTime);
+
+        if (isCountdown && targetTime > 0) {
+            return Math.min(runningSeconds, targetTime);
+        }
+        return runningSeconds;
+    };
+
     // 完成（结算）
     // isNormalCompletion 仅对倒计时有效；正计时忽略该参数
     const completeTimer = (isNormalCompletion = true) => {
@@ -109,12 +127,12 @@ const TimerModule = (() => {
         if (hasCompletedThisSession) return;
         hasCompletedThisSession = true;
 
+        // 无论是否在运行，立即停止计时
         clearInterval(timerInterval);
+        timerInterval = null;
 
-        // 用真实时间差计算，避免“0 分钟”误判
-        const now = Date.now();
-        const effectiveStart = typeof startTime === 'number' ? startTime : now;
-        const elapsedSeconds = Math.max(0, Math.floor((now - effectiveStart) / 1000));
+        // 关键修复：使用“实际生效的学习秒数”，不会把暂停时段算进去
+        const elapsedSeconds = getEffectiveElapsedSeconds();
         const durationMinutes = Math.floor(elapsedSeconds / 60);
 
         let hourlyRate = 0;
@@ -140,10 +158,12 @@ const TimerModule = (() => {
         }
 
         // 学习记录
+        const endTs = Date.now();
+        const effectiveStart = (typeof startTime === 'number') ? startTime : (endTs - elapsedSeconds * 1000);
         const studySession = {
             id: Date.now().toString(),
             startTime: new Date(effectiveStart).toISOString(),
-            endTime: new Date(now).toISOString(),
+            endTime: new Date(endTs).toISOString(),
             duration: durationMinutes, // 分钟
             completed: completedFlag,
             earnings: parseFloat(earnings.toFixed(2))
@@ -180,7 +200,6 @@ const TimerModule = (() => {
 
         // 不重置 hasCompletedThisSession，保持本次已完成状态；
         // 在下一次 startTimer 时再解锁
-
         updateDisplay();
 
         startButton.disabled = false;
@@ -251,7 +270,17 @@ const TimerModule = (() => {
         }
 
         // 主按钮
-        startButton.addEventListener('click', startTimer);
+        startButton.addEventListener('click', () => {
+            // 允许在“结束弹窗”打开时点击开始，先关闭弹窗再启动，避免状态错乱
+            const modalOverlay = document.getElementById('modal-overlay');
+            const exitModal = document.getElementById('exit-confirm-modal');
+            if (modalOverlay?.classList.contains('show-exit-modal')) {
+                modalOverlay.classList.remove('show-exit-modal');
+                modalOverlay.classList.add('hidden');
+                exitModal?.classList.add('hidden');
+            }
+            startTimer();
+        });
         pauseButton.addEventListener('click', pauseTimer);
         stopButton.addEventListener('click', stopTimer);
 
